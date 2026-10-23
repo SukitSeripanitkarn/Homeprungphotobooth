@@ -95,7 +95,7 @@ Only frames with `"textArea"` in `frames.json` offer it: the 4 classic frames. T
 | `maxAngle` | `150` | widest arc the text may cover, centred on the bottom |
 | `color` | `"#4A8A2E"` | text colour |
 
-For example: `"textArea": { "radius": 0.7, "color": "#5A0A2E" }`. The text uses Prompt SemiBold.
+For example: `"textArea": { "radius": 0.7, "color": "#5A0A2E" }`. The text uses Niramit SemiBold (600).
 
 The original artwork is 4500 × 4500 px, about 1.2 MB per file, which is too heavy for phones. The shipped files were made with the optional helper below. It resizes to 1024 px, more than the 709 px export, applies a 256-colour palette (about 80 KB per frame) and writes the thumbnail:
 
@@ -123,8 +123,8 @@ The tokens are CSS variables in `src/styles/brand.css`. The colours were sampled
 | `--bg` / `--bg-soft` | `#FFFFFF` / `#F3F8EE` | page / soft sections |
 | `--text` / `--text-muted` | `#241F21` / `#5D5A55` | logo wordmark ink / secondary text |
 | `--radius` / `--radius-pill` | `16px` / `999px` | cards / rounded buttons |
-| `--font-heading` | `Prompt`, Sarabun, Noto Sans Thai | Google Fonts |
-| `--font-body` | `Sarabun`, Prompt, Noto Sans Thai | Google Fonts |
+| `--font-heading` | `Niramit` (500/600), Noto Sans Thai | Google Fonts; headings, buttons |
+| `--font-body` | `Niramit` (400), Noto Sans Thai | Google Fonts; body text |
 
 ### Brand assets
 The asset paths are in `src/brand.ts`, and the files are in `public/brand/`:
@@ -135,7 +135,7 @@ The asset paths are in `src/brand.ts`, and the files are in `public/brand/`:
 
 ## Assumptions (please confirm or correct)
 
-1. **The colours come from the client's logo and frames, not from the baihor.com stylesheets.** The build environment couldn't reach the site. The fonts (Prompt for headings, Sarabun for body text) are also my choice. If the site uses different fonts or exact colour values, update `src/styles/brand.css` and the Google Fonts link in `index.html`.
+1. **The colours come from the client's logo and frames, not from the baihor.com stylesheets.** The build environment couldn't reach the site. The font is Niramit (นิรมิต), chosen by the client. To change colours or fonts, update `src/styles/brand.css`, `FRAME_TEXT_FONT` in `src/config.ts`, and the Google Fonts link in `index.html`.
 2. The leaf decoration is a stand-in for the site's leaf motif (see "Brand assets").
 3. The frame names in `frames.json` are descriptive Thai colour names I chose ("· ยาดม" marks the "Your Own Herbal Inhaler" versions). Rename them freely.
 4. "Edited images last 1 hour" means the customer's own browser clears them after 60 minutes. Nothing is stored on a server.

@@ -40,7 +40,7 @@ export const DEFAULT_TEXT_AREA = {
 /** In UTF-16 units, so Thai vowel and tone marks count too. */
 export const FRAME_TEXT_MAX_LENGTH = 40;
 /** Must be one of the weights loaded from Google Fonts in index.html. */
-export const FRAME_TEXT_FONT = { weight: 600, family: "Prompt, Sarabun, 'Noto Sans Thai', sans-serif" } as const;
+export const FRAME_TEXT_FONT = { weight: 600, family: "Niramit, 'Noto Sans Thai', sans-serif" } as const;
 
 export const FRAMES_MANIFEST_URL = '/frames/frames.json';
 export const FRAMES_BASE_URL = '/frames/';
