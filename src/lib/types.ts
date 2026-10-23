@@ -24,9 +24,11 @@ export interface FrameDef {
   id: string;
   name: string;
   file: string;
+  /** Optional small preview for the picker; falls back to `file`. */
+  thumb?: string;
 }
 
-export interface LoadedFrame extends FrameDef {
+export interface FrameEntry extends FrameDef {
   url: string;
-  image: HTMLImageElement;
+  thumbUrl: string;
 }

@@ -1,5 +1,14 @@
 [
-  { "id": "herbal-green", "name": "เขียวสมุนไพร", "file": "placeholder-herbal-green.png" },
-  { "id": "classic-gold", "name": "ทองคลาสสิก", "file": "placeholder-classic-gold.png" },
-  { "id": "leaf-minimal", "name": "ใบไม้มินิมอล", "file": "placeholder-leaf-minimal.png" }
+  {"id": "classic-yellow-purple", "name": "เหลืองม่วง", "file": "classic-yellow-purple.png", "thumb": "thumbs/classic-yellow-purple.png"},
+  {"id": "classic-teal", "name": "เขียวหยก", "file": "classic-teal.png", "thumb": "thumbs/classic-teal.png"},
+  {"id": "classic-red", "name": "แดงทับทิม", "file": "classic-red.png", "thumb": "thumbs/classic-red.png"},
+  {"id": "classic-white-teal", "name": "ขาวลายเขียว", "file": "classic-white-teal.png", "thumb": "thumbs/classic-white-teal.png"},
+  {"id": "inhaler-purple-red", "name": "ม่วงแดง · ยาดม", "file": "inhaler-purple-red.png", "thumb": "thumbs/inhaler-purple-red.png"},
+  {"id": "inhaler-red-green", "name": "แดงเขียว · ยาดม", "file": "inhaler-red-green.png", "thumb": "thumbs/inhaler-red-green.png"},
+  {"id": "inhaler-orange-green", "name": "ส้มเขียว · ยาดม", "file": "inhaler-orange-green.png", "thumb": "thumbs/inhaler-orange-green.png"},
+  {"id": "inhaler-orange-red", "name": "ส้มแดง · ยาดม", "file": "inhaler-orange-red.png", "thumb": "thumbs/inhaler-orange-red.png"},
+  {"id": "inhaler-yellow-purple", "name": "เหลืองม่วง · ยาดม", "file": "inhaler-yellow-purple.png", "thumb": "thumbs/inhaler-yellow-purple.png"},
+  {"id": "inhaler-teal", "name": "เขียวหยก · ยาดม", "file": "inhaler-teal.png", "thumb": "thumbs/inhaler-teal.png"},
+  {"id": "inhaler-red", "name": "แดงทับทิม · ยาดม", "file": "inhaler-red.png", "thumb": "thumbs/inhaler-red.png"},
+  {"id": "inhaler-white-teal", "name": "ขาวลายเขียว · ยาดม", "file": "inhaler-white-teal.png", "thumb": "thumbs/inhaler-white-teal.png"}
 ]

@@ -13,9 +13,9 @@ import { PrintActions } from './components/PrintActions';
 import { PrintView, printNow, type PrintMode } from './components/PrintView';
 import { loadStoredPhoto, preparePhoto } from './lib/exif';
 import { downloadBlob, exportPng } from './lib/exportPng';
-import { loadFrames } from './lib/frames';
+import { loadFrameImage, loadFrameManifest } from './lib/frames';
 import { clearSession, isExpired, loadSession, savePhoto, saveState } from './lib/session';
-import { DEFAULT_EDIT, type EditState, type LoadedFrame, type Photo } from './lib/types';
+import { DEFAULT_EDIT, type EditState, type FrameEntry, type Photo } from './lib/types';
 
 type Screen = 'boot' | 'landing' | 'editor' | 'done' | 'expired';
 
@@ -65,7 +65,8 @@ export default function App() {
   const [createdAt, setCreatedAt] = useState<number | null>(null);
   const [edit, setEdit] = useState<EditState>(DEFAULT_EDIT);
   const [frameId, setFrameId] = useState<string | null>(null);
-  const [frames, setFrames] = useState<LoadedFrame[] | null>(null);
+  const [frames, setFrames] = useState<FrameEntry[] | null>(null);
+  const [loadedFrame, setLoadedFrame] = useState<{ id: string; image: HTMLImageElement } | null>(null);
   const [framesError, setFramesError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,9 +78,24 @@ export default function App() {
 
   const frame = frames?.find((f) => f.id === frameId) ?? frames?.[0] ?? null;
 
+  // Load the selected frame's full image on demand (thumbnails are used in the picker).
+  useEffect(() => {
+    if (!frame) return;
+    let current = true;
+    loadFrameImage(frame)
+      .then((image) => current && setLoadedFrame({ id: frame.id, image }))
+      .catch(() => current && setFramesError(true));
+    return () => {
+      current = false;
+    };
+  }, [frame]);
+  const frameImage = loadedFrame?.image ?? null;
+  // Until the chosen frame has decoded, exports would still show the previous one.
+  const frameReady = !frame || loadedFrame?.id === frame.id;
+
   // ---- boot: frames + restore a saved session ----
   useEffect(() => {
-    loadFrames()
+    loadFrameManifest()
       .then(setFrames)
       .catch((err) => {
         console.error('[frames]', err);
@@ -149,7 +165,7 @@ export default function App() {
   // ---- keep an up-to-date export for print + done preview ----
   const refreshExport = useCallback(async () => {
     if (!photo) return null;
-    const blob = await exportPng(photo, edit, frame?.image ?? null);
+    const blob = await exportPng(photo, edit, frameImage);
     exportBlobRef.current = blob;
     exportDirty.current = false;
     setExportUrl((old) => {
@@ -157,7 +173,7 @@ export default function App() {
       return URL.createObjectURL(blob);
     });
     return blob;
-  }, [photo, edit, frame]);
+  }, [photo, edit, frameImage]);
 
   useEffect(() => {
     exportDirty.current = true;
@@ -228,7 +244,7 @@ export default function App() {
       onPrintSheet={() => handlePrint('sheet')}
       sheetCount={sheetCount}
       onSheetCount={setSheetCount}
-      disabled={!photo}
+      disabled={!photo || !frameReady}
     />
   );
 
@@ -237,14 +253,14 @@ export default function App() {
       <div className="app">
         <Header workshop={workshop} />
         {screen === 'boot' && <div className="screen" aria-busy="true" />}
-        {screen === 'landing' && <Landing onFile={handleFile} busy={busy} error={error} />}
+        {screen === 'landing' && <Landing onFile={handleFile} busy={busy} error={error} heroUrl={frames?.[0]?.url ?? null} />}
         {screen === 'expired' && <ExpiredScreen onStartOver={() => reset('landing')} />}
         {screen === 'editor' && photo && (
           <Editor
             photo={photo}
             edit={edit}
             onEdit={setEdit}
-            frame={frame?.image ?? null}
+            frame={frameImage}
             onReset={() => setEdit(DEFAULT_EDIT)}
             countdown={countdown}
             changePhoto={

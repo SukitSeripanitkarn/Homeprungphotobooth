@@ -1,9 +1,15 @@
 import { FRAMES_BASE_URL, FRAMES_MANIFEST_URL } from '../config';
-import type { FrameDef, LoadedFrame } from './types';
+import type { FrameDef, FrameEntry } from './types';
 
 function isFrameDef(v: unknown): v is FrameDef {
   const f = v as FrameDef;
-  return !!f && typeof f.id === 'string' && typeof f.name === 'string' && typeof f.file === 'string';
+  return (
+    !!f &&
+    typeof f.id === 'string' &&
+    typeof f.name === 'string' &&
+    typeof f.file === 'string' &&
+    (f.thumb === undefined || typeof f.thumb === 'string')
+  );
 }
 
 /** Warns (dev console) about frames that aren't square or don't look circular. */
@@ -38,38 +44,44 @@ function checkFrame(def: FrameDef, img: HTMLImageElement) {
   }
 }
 
-function loadImage(url: string): Promise<HTMLImageElement> {
-  const img = new Image();
-  img.decoding = 'async';
-  img.src = url;
-  return img.decode().then(() => img);
-}
-
-/** Reads /frames/frames.json and decodes every frame listed in it. */
-export async function loadFrames(): Promise<LoadedFrame[]> {
+/** Reads /frames/frames.json. Frame images themselves are loaded on demand. */
+export async function loadFrameManifest(): Promise<FrameEntry[]> {
   const res = await fetch(FRAMES_MANIFEST_URL, { cache: 'no-cache' });
   if (!res.ok) throw new Error(`frames.json: HTTP ${res.status}`);
   const json: unknown = await res.json();
   if (!Array.isArray(json)) throw new Error('frames.json must be an array');
 
-  const defs = json.filter((d, i) => {
-    if (isFrameDef(d)) return true;
-    console.warn(`[frames] entry #${i} is missing "id", "name" or "file" and was skipped`, d);
-    return false;
-  });
+  return json
+    .filter((d, i) => {
+      if (isFrameDef(d)) return true;
+      console.warn(`[frames] entry #${i} is missing "id", "name" or "file" and was skipped`, d);
+      return false;
+    })
+    .map((def: FrameDef) => ({
+      ...def,
+      url: FRAMES_BASE_URL + encodeURI(def.file),
+      thumbUrl: FRAMES_BASE_URL + encodeURI(def.thumb ?? def.file),
+    }));
+}
 
-  const loaded = await Promise.all(
-    defs.map(async (def): Promise<LoadedFrame | null> => {
-      const url = FRAMES_BASE_URL + encodeURIComponent(def.file);
-      try {
-        const image = await loadImage(url);
-        checkFrame(def, image);
-        return { ...def, url, image };
-      } catch {
-        console.warn(`[frames] could not load "${def.file}" — skipped`);
-        return null;
-      }
-    }),
-  );
-  return loaded.filter((f): f is LoadedFrame => f !== null);
+const cache = new Map<string, Promise<HTMLImageElement>>();
+
+/** Decodes (once) the full-size image of a frame. */
+export function loadFrameImage(frame: FrameEntry): Promise<HTMLImageElement> {
+  let p = cache.get(frame.url);
+  if (!p) {
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = frame.url;
+    p = img.decode().then(() => {
+      checkFrame(frame, img);
+      return img;
+    });
+    p.catch(() => {
+      cache.delete(frame.url);
+      console.warn(`[frames] could not load "${frame.file}"`);
+    });
+    cache.set(frame.url, p);
+  }
+  return p;
 }

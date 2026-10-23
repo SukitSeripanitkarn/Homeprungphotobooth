@@ -1,4 +1,3 @@
-import { BRAND } from '../brand';
 import { useI18n } from '../i18n';
 import { PhotoInput } from './PhotoInput';
 
@@ -6,14 +5,16 @@ interface Props {
   onFile: (file: File) => void;
   busy: boolean;
   error: string | null;
+  /** A frame image to preview the result on the landing page. */
+  heroUrl: string | null;
 }
 
-export function Landing({ onFile, busy, error }: Props) {
+export function Landing({ onFile, busy, error, heroUrl }: Props) {
   const { t } = useI18n();
   return (
     <main className="screen landing">
-      <div className="landing__badge" aria-hidden="true">
-        <img src={BRAND.leaf} alt="" width={72} height={72} />
+      <div className="landing__hero" aria-hidden="true">
+        {heroUrl && <img src={heroUrl} alt="" width={200} height={200} fetchPriority="high" />}
         <span>3 cm</span>
       </div>
       <h1 className="landing__title">{t.appName}</h1>

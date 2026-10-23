@@ -1,8 +1,8 @@
 import { useI18n } from '../i18n';
-import type { LoadedFrame } from '../lib/types';
+import type { FrameEntry } from '../lib/types';
 
 interface Props {
-  frames: LoadedFrame[] | null;
+  frames: FrameEntry[] | null;
   error: boolean;
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -24,7 +24,7 @@ export function FramePicker({ frames, error, selectedId, onSelect }: Props) {
             className={`frames__item${f.id === selectedId ? ' is-selected' : ''}`}
             onClick={() => onSelect(f.id)}
           >
-            <img src={f.url} alt="" width={64} height={64} loading="lazy" />
+            <img src={f.thumbUrl} alt="" width={64} height={64} loading="lazy" decoding="async" />
             <span>{f.name}</span>
           </button>
         ))}

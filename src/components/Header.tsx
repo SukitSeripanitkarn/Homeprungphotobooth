@@ -5,7 +5,7 @@ export function Header({ workshop }: { workshop: string | null }) {
   const { t, toggle } = useI18n();
   return (
     <header className="header">
-      <img className="header__logo" src={BRAND.logo} alt={t.appName} width={180} height={48} />
+      <img className="header__logo" src={BRAND.logo} alt="ตราใบห่อ Tra Baihor" width={300} height={287} />
       <div className="header__right">
         {workshop && (
           <span className="chip" title={t.workshop}>

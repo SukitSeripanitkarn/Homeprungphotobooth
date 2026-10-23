@@ -1,27 +1,31 @@
 /*
- * Baihor / Homprung CI tokens.
- * NOTE: baihor.com could not be fetched from the build environment, so these
- * are an herbal-green palette chosen to match the brand description. See
- * README → "Brand tokens" / "Assumptions" and replace with the real values.
+ * Baihor / Homprung CI tokens, sampled from the client's own assets:
+ *  - Homprung frames ("HOMPRUNG BY BAIHOR"): green #4A8A2E, teal #1A7A6E,
+ *    yellow #EADE00, maroon #4E001E
+ *  - ตราใบห่อ logo wordmark: ink #241F21
+ * --brand-primary is a slightly deeper shade of the frame green so white
+ *   button text meets WCAG AA contrast.
  */
 :root {
-  --brand-primary: #2e6b3a; /* herbal green – buttons, headings */
-  --brand-primary-dark: #1f4d29; /* hover / pressed */
-  --brand-secondary: #7ba05b; /* leaf green – decoration */
-  --brand-accent: #c9a24a; /* warm gold – accent buttons, highlights */
-  --brand-accent-dark: #a8862f;
+  --brand-primary: #3e7a25; /* Homprung green (deepened) – buttons, headings */
+  --brand-primary-dark: #2f5f1b; /* hover / pressed */
+  --brand-green: #4a8a2e; /* exact frame/text green */
+  --brand-secondary: #1a7a6e; /* teal from the frame patterns */
+  --brand-accent: #5a0a2e; /* maroon flower ornament – Print button */
+  --brand-accent-dark: #3f0620;
+  --brand-highlight: #eade00; /* yellow inner ring – selection highlight */
   --bg: #ffffff;
-  --bg-soft: #f4f8f1; /* pale leaf tint for sections */
+  --bg-soft: #f3f8ee; /* pale green tint for sections */
   --surface: #ffffff;
-  --text: #1e2a20;
-  --text-muted: #5b6b5e;
-  --border: #dfe8d8;
-  --danger: #b3402e;
+  --text: #241f21; /* logo wordmark ink */
+  --text-muted: #5d5a55;
+  --border: #dde8d4;
+  --danger: #b3261e;
 
   --radius: 16px;
   --radius-sm: 10px;
   --radius-pill: 999px;
-  --shadow: 0 6px 24px rgba(31, 77, 41, 0.12);
+  --shadow: 0 6px 24px rgba(47, 95, 27, 0.14);
 
   --font-heading: 'Prompt', 'Sarabun', 'Noto Sans Thai', system-ui, sans-serif;
   --font-body: 'Sarabun', 'Prompt', 'Noto Sans Thai', system-ui, sans-serif;

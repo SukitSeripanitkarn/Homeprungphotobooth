@@ -1,11 +1,7 @@
-/**
- * Brand asset paths (files live in /public/brand). Swap these for the real
- * Baihor / Homprung files (e.g. logo-baihor-3.webp, homprung-logo.webp) once
- * downloaded from baihor.com — see README "Brand assets".
- */
+/** Brand asset paths (files live in /public/brand). See README "Brand assets". */
 export const BRAND = {
-  logo: '/brand/logo-homprung.svg',
+  /** ตราใบห่อ / Tra Baihor logo (seal + wordmark), 300×287. */
+  logo: '/brand/logo-baihor.webp',
   leaf: '/brand/leaf.svg',
-  favicon: '/brand/favicon.svg',
   siteUrl: 'https://baihor.com/',
 } as const;
