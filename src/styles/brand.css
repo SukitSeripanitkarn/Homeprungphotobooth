@@ -1,0 +1,28 @@
+/*
+ * Baihor / Homprung CI tokens.
+ * NOTE: baihor.com could not be fetched from the build environment, so these
+ * are an herbal-green palette chosen to match the brand description. See
+ * README → "Brand tokens" / "Assumptions" and replace with the real values.
+ */
+:root {
+  --brand-primary: #2e6b3a; /* herbal green – buttons, headings */
+  --brand-primary-dark: #1f4d29; /* hover / pressed */
+  --brand-secondary: #7ba05b; /* leaf green – decoration */
+  --brand-accent: #c9a24a; /* warm gold – accent buttons, highlights */
+  --brand-accent-dark: #a8862f;
+  --bg: #ffffff;
+  --bg-soft: #f4f8f1; /* pale leaf tint for sections */
+  --surface: #ffffff;
+  --text: #1e2a20;
+  --text-muted: #5b6b5e;
+  --border: #dfe8d8;
+  --danger: #b3402e;
+
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-pill: 999px;
+  --shadow: 0 6px 24px rgba(31, 77, 41, 0.12);
+
+  --font-heading: 'Prompt', 'Sarabun', 'Noto Sans Thai', system-ui, sans-serif;
+  --font-body: 'Sarabun', 'Prompt', 'Noto Sans Thai', system-ui, sans-serif;
+}
