@@ -1,6 +1,6 @@
 # Homprung Photobooth (หอมปรุง Photobooth)
 
-A mobile-first photobooth for Baihor / Homprung workshops that runs entirely in the browser. Customers scan a QR code, pick or take a photo, and place it inside a round brand frame. Then they **download or print it themselves** as a **30 mm circle**.
+A mobile-first photobooth for Baihor / Homprung workshops that runs entirely in the browser. Customers scan a QR code, pick or take a photo, and place it inside a round brand frame. Then they **download or print it themselves** as a **35 mm circle**.
 
 - **No backend, no database, no cloud storage, no accounts, no analytics.** Photos never leave the device.
 - Work is saved in the customer's own browser (IndexedDB) and **wiped automatically after 60 minutes**.
@@ -41,9 +41,9 @@ Thai is the default language, and the header has an **EN** toggle. All strings l
 - The iOS picker converts HEIC photos to JPEG. Android Chrome cannot decode HEIC, so the user sees a friendly error and can pick another photo.
 
 ### Print output (`src/lib/exportPng.ts`, `src/components/PrintView.tsx`)
-- **PNG:** 709 × 709 px (≈600 DPI at 30 mm). The photo is drawn first, the frame on top, then everything is clipped to a circle with **transparent corners**. A `pHYs` chunk (23622 px/m ≈ 600 DPI) tells image viewers and print dialogs the physical size.
-- **พิมพ์ (Print):** prints one circle with `@page { size: auto; margin: 0 }` and the image at exactly `width: 30mm; height: 30mm`.
-- **พิมพ์แผ่นสติกเกอร์ A4:** a centered A4 page with 6 columns × 8 rows and 2 mm gutters. A selector sets how many circles to print (1–48, default 1; change `SHEET_DEFAULT_COUNT` in `src/config.ts`). To get a PDF, use the browser's "Save as PDF".
+- **PNG:** 827 × 827 px (600 DPI at 35 mm). The photo is drawn first, the frame on top, then everything is clipped to a circle with **transparent corners**. A `pHYs` chunk (23629 px/m ≈ 600 DPI) tells image viewers and print dialogs the physical size.
+- **พิมพ์ (Print):** prints one circle with `@page { size: auto; margin: 0 }` and the image at exactly `width: 35mm; height: 35mm`.
+- **พิมพ์แผ่นสติกเกอร์ A4:** a centered A4 page with 5 columns × 7 rows and 2 mm gutters (183 × 257 mm). A selector sets how many circles to print (1–35, default 1; change `SHEET_DEFAULT_COUNT` in `src/config.ts`). To get a PDF, use the browser's "Save as PDF".
 - The UI shows this tip under the buttons: **"พิมพ์ที่ขนาดจริง 100% (ไม่ย่อ/ขยาย)"**.
 
 The print markup always stays in the page (hidden on screen) with the latest export. That way `window.print()` can run directly inside the tap, which iOS Safari requires.
@@ -97,7 +97,7 @@ Only frames with `"textArea"` in `frames.json` offer it: the 4 classic frames. T
 
 For example: `"textArea": { "radius": 0.7, "color": "#5A0A2E" }`. The text uses Niramit SemiBold (600).
 
-The original artwork is 4500 × 4500 px, about 1.2 MB per file, which is too heavy for phones. The shipped files were made with the optional helper below. It resizes to 1024 px, more than the 709 px export, applies a 256-colour palette (about 80 KB per frame) and writes the thumbnail:
+The original artwork is 4500 × 4500 px, about 1.2 MB per file, which is too heavy for phones. The shipped files were made with the optional helper below. It resizes to 1024 px, more than the 827 px export, applies a 256-colour palette (about 80 KB per frame) and writes the thumbnail:
 
 ```bash
 pip install pillow
@@ -140,7 +140,7 @@ The asset paths are in `src/brand.ts`, and the files are in `public/brand/`:
 3. The frame names in `frames.json` are descriptive Thai colour names I chose ("· ยาดม" marks the "Your Own Herbal Inhaler" versions). Rename them freely.
 4. "Edited images last 1 hour" means the customer's own browser clears them after 60 minutes. Nothing is stored on a server.
 5. Frame files are square transparent PNGs designed for a circular crop.
-6. 600 DPI (709 px) works for the sticker printer. If the print shop needs another resolution, change `EXPORT_PX` in `src/config.ts`; the DPI metadata updates automatically.
+6. The sticker is 35 mm at 600 DPI (827 px). To change the size, edit `PRINT_DIAMETER_MM` in `src/config.ts`. The export size, DPI metadata, filename and the "3.5 cm" text follow automatically, but the A4 layout in `SHEET` (and the description in `index.html`) must be checked by hand. To change the resolution, edit `EXPORT_DPI`.
 7. The UI spells the brand **Homprung / หอมปรุง**, while the Vercel project name stays `homeprungphotobooth`.
 8. The "เปิดกล้องถ่ายรูป" shortcut opens the front (selfie) camera. For the rear camera, change `capture` in `src/components/PhotoInput.tsx` to `environment`.
 
@@ -172,16 +172,16 @@ Use error-correction level M or higher, and print the QR at least 3 cm wide.
 ## Acceptance checklist
 
 Checked automatically in headless Chromium (Pixel 7 emulation):
-- [x] The exported PNG is 709×709 RGBA with transparent corners and pHYs = 600 DPI.
+- [x] The exported PNG is 827×827 RGBA with transparent corners and pHYs = 600 DPI.
 - [x] A photo with EXIF orientation 6 comes out rotated correctly.
-- [x] The print view image measures 30 mm, and 48 circles fit on one A4 page.
+- [x] The print view image measures 35 mm, and 35 circles (5 × 7) fit on one A4 page.
 - [x] A refresh restores work. A record older than 60 min is wiped on load and the Expired screen appears.
 - [x] No network request carries image data (only `blob:` URLs).
 - [x] A photo larger than 4000 px is downscaled and loads.
 
 Still to do on real devices or with the client:
 - [ ] iPhone Safari and Android Chrome with real camera-roll photos (including HEIC).
-- [ ] Print and measure 30 mm with a ruler (single circle and A4 sheet).
+- [ ] Print and measure 35 mm with a ruler (single circle and A4 sheet).
 - [ ] Confirm fonts and colours against baihor.com, and swap in the real leaf motif.
 - [ ] Lighthouse mobile ≥ 90 on the deployed URL.
 

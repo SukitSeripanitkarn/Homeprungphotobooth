@@ -1,3 +1,4 @@
+import { PRINT_DIAMETER_CM } from '../config';
 import { useI18n } from '../i18n';
 import { PhotoInput } from './PhotoInput';
 
@@ -15,7 +16,7 @@ export function Landing({ onFile, busy, error, heroUrl }: Props) {
     <main className="screen landing">
       <div className="landing__hero" aria-hidden="true">
         {heroUrl && <img src={heroUrl} alt="" width={200} height={200} fetchPriority="high" />}
-        <span>3 cm</span>
+        <span>{PRINT_DIAMETER_CM} cm</span>
       </div>
       <h1 className="landing__title">{t.appName}</h1>
       <p className="landing__tagline">{t.tagline}</p>

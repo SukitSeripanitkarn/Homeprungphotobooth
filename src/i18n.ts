@@ -1,10 +1,11 @@
 import { createContext, useContext } from 'react';
+import { PRINT_DIAMETER_CM } from './config';
 
 export type Lang = 'th' | 'en';
 
 const th = {
   appName: 'หอมปรุง Photobooth',
-  tagline: 'ใส่รูปของคุณในกรอบหอมปรุง แล้วพิมพ์เป็นสติกเกอร์วงกลม 3 ซม.',
+  tagline: `ใส่รูปของคุณในกรอบหอมปรุง แล้วพิมพ์เป็นสติกเกอร์วงกลม ${PRINT_DIAMETER_CM} ซม.`,
   choosePhoto: 'เลือกรูป / ถ่ายรูป',
   openCamera: 'เปิดกล้องถ่ายรูป',
   privacyNote:
@@ -49,7 +50,7 @@ type Strings = typeof th;
 
 const en: Strings = {
   appName: 'Homprung Photobooth',
-  tagline: 'Put your photo in a Homprung frame and print it as a 3 cm round sticker.',
+  tagline: `Put your photo in a Homprung frame and print it as a ${PRINT_DIAMETER_CM} cm round sticker.`,
   choosePhoto: 'Choose / take a photo',
   openCamera: 'Open camera',
   privacyNote:

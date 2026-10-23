@@ -1,4 +1,4 @@
-import { EXPORT_PX, EXPORT_PX_PER_METRE } from '../config';
+import { EXPORT_PX, EXPORT_PX_PER_METRE, PRINT_DIAMETER_MM } from '../config';
 import type { FrameOverlay } from './arcText';
 import { compose } from './compose';
 import type { EditState, Photo } from './types';
@@ -90,7 +90,7 @@ export async function exportPng(
   return new Blob([bytes as BlobPart], { type: 'image/png' });
 }
 
-export const EXPORT_FILENAME = 'homprung-photobooth-30mm.png';
+export const EXPORT_FILENAME = `homprung-photobooth-${PRINT_DIAMETER_MM}mm.png`;
 
 export function downloadBlob(blob: Blob, filename = EXPORT_FILENAME) {
   const url = URL.createObjectURL(blob);

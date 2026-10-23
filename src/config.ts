@@ -3,11 +3,15 @@ export const SESSION_TTL_MINUTES = 60;
 /** How often the expiry check (and countdown) runs. */
 export const SESSION_CHECK_INTERVAL_MS = 30_000;
 
-/** Physical print size of the circle. */
-export const PRINT_DIAMETER_MM = 30;
-/** Export resolution. 709 px over 30 mm ≈ 600 DPI. Change for a different print shop resolution. */
-export const EXPORT_PX = 709;
-/** Pixels per metre written into the PNG pHYs chunk (EXPORT_PX / 30 mm). */
+/** Physical print size of the circle. Everything below (export size, sheet text, filename) follows it. */
+export const PRINT_DIAMETER_MM = 35;
+/** Same size in centimetres for UI copy, e.g. "3.5". */
+export const PRINT_DIAMETER_CM = String(PRINT_DIAMETER_MM / 10);
+/** Export resolution. Change for a different print shop requirement. */
+export const EXPORT_DPI = 600;
+/** Export width/height in px: 35 mm at 600 DPI = 827 px. */
+export const EXPORT_PX = Math.round((PRINT_DIAMETER_MM / 25.4) * EXPORT_DPI);
+/** Pixels per metre written into the PNG pHYs chunk (EXPORT_PX / diameter). */
 export const EXPORT_PX_PER_METRE = Math.round(EXPORT_PX / (PRINT_DIAMETER_MM / 1000));
 
 /** Photos larger than this (longest side) are downscaled before editing. */
@@ -16,10 +20,13 @@ export const MAX_PHOTO_PX = 4000;
 export const ZOOM_MIN = 1;
 export const ZOOM_MAX = 5;
 
-/** A4 sticker sheet layout. */
+/**
+ * A4 sticker sheet layout. At 35 mm with 2 mm gutters, 5 × 7 = 183 × 257 mm,
+ * leaving ≥13 mm margins that every printer can reach.
+ */
 export const SHEET = {
-  columns: 6,
-  rows: 8,
+  columns: 5,
+  rows: 7,
   gutterMm: 2,
   pageWidthMm: 210,
   pageHeightMm: 297,
