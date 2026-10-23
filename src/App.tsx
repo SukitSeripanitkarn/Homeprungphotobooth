@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { SESSION_CHECK_INTERVAL_MS, SHEET_MAX } from './config';
+import { SESSION_CHECK_INTERVAL_MS, SHEET_DEFAULT_COUNT } from './config';
 import { STRINGS, I18nContext, type Lang } from './i18n';
 import { Countdown } from './components/Countdown';
 import { DoneScreen } from './components/DoneScreen';
@@ -75,7 +75,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
-  const [sheetCount, setSheetCount] = useState(SHEET_MAX);
+  const [sheetCount, setSheetCount] = useState(SHEET_DEFAULT_COUNT);
   const [exportUrl, setExportUrl] = useState<string | null>(null);
   const exportBlobRef = useRef<Blob | null>(null);
   const exportDirty = useRef(true);

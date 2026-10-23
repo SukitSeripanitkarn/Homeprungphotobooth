@@ -43,7 +43,7 @@ Thai is the default language, and the header has an **EN** toggle. All strings l
 ### Print output (`src/lib/exportPng.ts`, `src/components/PrintView.tsx`)
 - **PNG:** 709 × 709 px (≈600 DPI at 30 mm). The photo is drawn first, the frame on top, then everything is clipped to a circle with **transparent corners**. A `pHYs` chunk (23622 px/m ≈ 600 DPI) tells image viewers and print dialogs the physical size.
 - **พิมพ์ (Print):** prints one circle with `@page { size: auto; margin: 0 }` and the image at exactly `width: 30mm; height: 30mm`.
-- **พิมพ์แผ่นสติกเกอร์ A4:** a centered A4 page with 6 columns × 8 rows and 2 mm gutters. A selector sets how many circles to print (1–48). To get a PDF, use the browser's "Save as PDF".
+- **พิมพ์แผ่นสติกเกอร์ A4:** a centered A4 page with 6 columns × 8 rows and 2 mm gutters. A selector sets how many circles to print (1–48, default 1; change `SHEET_DEFAULT_COUNT` in `src/config.ts`). To get a PDF, use the browser's "Save as PDF".
 - The UI shows this tip under the buttons: **"พิมพ์ที่ขนาดจริง 100% (ไม่ย่อ/ขยาย)"**.
 
 The print markup always stays in the page (hidden on screen) with the latest export. That way `window.print()` can run directly inside the tap, which iOS Safari requires.

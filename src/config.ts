@@ -25,6 +25,8 @@ export const SHEET = {
   pageHeightMm: 297,
 } as const;
 export const SHEET_MAX = SHEET.columns * SHEET.rows;
+/** Stickers per A4 sheet selected by default. */
+export const SHEET_DEFAULT_COUNT = 1;
 
 /**
  * Custom text band defaults, measured from the HOMPRUNG BY BAIHOR frames:
