@@ -26,5 +26,21 @@ export const SHEET = {
 } as const;
 export const SHEET_MAX = SHEET.columns * SHEET.rows;
 
+/**
+ * Custom text band defaults, measured from the HOMPRUNG BY BAIHOR frames:
+ * the empty bottom band spans 0.63–0.82 of the radius, and the printed
+ * "Your Own Herbal Inhaler" text sits at 0.68–0.78 over ~155°.
+ */
+export const DEFAULT_TEXT_AREA = {
+  radius: 0.726,
+  height: 0.1,
+  maxAngle: 150,
+  color: '#4A8A2E',
+} as const;
+/** In UTF-16 units, so Thai vowel and tone marks count too. */
+export const FRAME_TEXT_MAX_LENGTH = 40;
+/** Must be one of the weights loaded from Google Fonts in index.html. */
+export const FRAME_TEXT_FONT = { weight: 600, family: "Prompt, Sarabun, 'Noto Sans Thai', sans-serif" } as const;
+
 export const FRAMES_MANIFEST_URL = '/frames/frames.json';
 export const FRAMES_BASE_URL = '/frames/';

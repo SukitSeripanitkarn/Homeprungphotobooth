@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ZOOM_MAX, ZOOM_MIN } from '../config';
 import { useI18n } from '../i18n';
+import type { FrameOverlay } from '../lib/arcText';
 import { clampEdit, compose, zoomAbout } from '../lib/compose';
 import type { EditState, Photo } from '../lib/types';
 
@@ -9,15 +10,33 @@ interface Props {
   edit: EditState;
   onEdit: (edit: EditState) => void;
   frame: HTMLImageElement | null;
+  overlay: FrameOverlay | null;
+  /** Changes when the text font finishes loading, to trigger a redraw. */
+  fontEpoch: number;
   onReset: () => void;
   changePhoto: ReactNode;
   countdown: ReactNode;
   framePicker: ReactNode;
+  textInput: ReactNode;
   actions: ReactNode;
   onDone: () => void;
 }
 
-export function Editor({ photo, edit, onEdit, frame, onReset, changePhoto, countdown, framePicker, actions, onDone }: Props) {
+export function Editor({
+  photo,
+  edit,
+  onEdit,
+  frame,
+  overlay,
+  fontEpoch,
+  onReset,
+  changePhoto,
+  countdown,
+  framePicker,
+  textInput,
+  actions,
+  onDone,
+}: Props) {
   const { t } = useI18n();
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -47,9 +66,9 @@ export function Editor({ photo, edit, onEdit, frame, onReset, changePhoto, count
     }
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const raf = requestAnimationFrame(() => compose(ctx, px, photo, edit, frame));
+    const raf = requestAnimationFrame(() => compose(ctx, px, photo, edit, frame, overlay));
     return () => cancelAnimationFrame(raf);
-  }, [cssSize, photo, edit, frame]);
+  }, [cssSize, photo, edit, frame, overlay, fontEpoch]);
 
   /** Converts a client point to diameter units relative to the circle centre. */
   const toUnits = useCallback((clientX: number, clientY: number) => {
@@ -169,6 +188,7 @@ export function Editor({ photo, edit, onEdit, frame, onReset, changePhoto, count
       </div>
 
       {framePicker}
+      {textInput}
       {actions}
 
       <button type="button" className="btn btn--link" onClick={onDone}>

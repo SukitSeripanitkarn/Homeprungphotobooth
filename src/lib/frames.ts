@@ -8,7 +8,8 @@ function isFrameDef(v: unknown): v is FrameDef {
     typeof f.id === 'string' &&
     typeof f.name === 'string' &&
     typeof f.file === 'string' &&
-    (f.thumb === undefined || typeof f.thumb === 'string')
+    (f.thumb === undefined || typeof f.thumb === 'string') &&
+    (f.textArea === undefined || (typeof f.textArea === 'object' && f.textArea !== null))
   );
 }
 

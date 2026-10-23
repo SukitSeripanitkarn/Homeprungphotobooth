@@ -1,4 +1,5 @@
 import { ZOOM_MAX, ZOOM_MIN } from '../config';
+import { drawArcText, type FrameOverlay } from './arcText';
 import type { EditState, Photo } from './types';
 
 /** Size of the photo in circle-diameter units at the given zoom/rotation. */
@@ -34,8 +35,8 @@ export function zoomAbout(edit: EditState, factor: number, px: number, py: numbe
 }
 
 /**
- * Draws photo + frame clipped to a circle filling a `size`×`size` canvas.
- * Corners outside the circle stay fully transparent.
+ * Draws photo + frame (+ optional curved text) clipped to a circle filling a
+ * `size`×`size` canvas. Corners outside the circle stay fully transparent.
  */
 export function compose(
   ctx: CanvasRenderingContext2D,
@@ -43,6 +44,7 @@ export function compose(
   photo: Photo,
   edit: EditState,
   frame: HTMLImageElement | null,
+  overlay: FrameOverlay | null = null,
 ) {
   ctx.save();
   ctx.clearRect(0, 0, size, size);
@@ -72,5 +74,6 @@ export function compose(
     const s = Math.min(fw, fh);
     ctx.drawImage(frame, (fw - s) / 2, (fh - s) / 2, s, s, 0, 0, size, size);
   }
+  if (overlay) drawArcText(ctx, size, overlay);
   ctx.restore();
 }

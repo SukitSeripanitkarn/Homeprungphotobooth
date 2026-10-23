@@ -6,11 +6,13 @@ import { DoneScreen } from './components/DoneScreen';
 import { Editor } from './components/Editor';
 import { ExpiredScreen } from './components/ExpiredScreen';
 import { FramePicker } from './components/FramePicker';
+import { FrameTextInput } from './components/FrameTextInput';
 import { Header } from './components/Header';
 import { Landing } from './components/Landing';
 import { PhotoInput } from './components/PhotoInput';
 import { PrintActions } from './components/PrintActions';
 import { PrintView, printNow, type PrintMode } from './components/PrintView';
+import { loadFrameTextFont, type FrameOverlay } from './lib/arcText';
 import { loadStoredPhoto, preparePhoto } from './lib/exif';
 import { downloadBlob, exportPng } from './lib/exportPng';
 import { loadFrameImage, loadFrameManifest } from './lib/frames';
@@ -65,6 +67,8 @@ export default function App() {
   const [createdAt, setCreatedAt] = useState<number | null>(null);
   const [edit, setEdit] = useState<EditState>(DEFAULT_EDIT);
   const [frameId, setFrameId] = useState<string | null>(null);
+  const [frameText, setFrameText] = useState('');
+  const [fontEpoch, setFontEpoch] = useState(0);
   const [frames, setFrames] = useState<FrameEntry[] | null>(null);
   const [loadedFrame, setLoadedFrame] = useState<{ id: string; image: HTMLImageElement } | null>(null);
   const [framesError, setFramesError] = useState(false);
@@ -93,6 +97,19 @@ export default function App() {
   // Until the chosen frame has decoded, exports would still show the previous one.
   const frameReady = !frame || loadedFrame?.id === frame.id;
 
+  // Custom curved text, only on frames that have an empty band for it.
+  const overlay = useMemo<FrameOverlay | null>(
+    () => (frame?.textArea && frameText.trim() ? { text: frameText, area: frame.textArea } : null),
+    [frame, frameText],
+  );
+  useEffect(() => {
+    let current = true;
+    loadFrameTextFont(frameText).then(() => current && setFontEpoch((n) => n + 1));
+    return () => {
+      current = false;
+    };
+  }, [frameText]);
+
   // ---- boot: frames + restore a saved session ----
   useEffect(() => {
     loadFrameManifest()
@@ -113,6 +130,7 @@ export default function App() {
         if (res.state) {
           setEdit(res.state.edit);
           setFrameId(res.state.frameId);
+          setFrameText(res.state.frameText ?? '');
         }
         setScreen(res.state?.screen ?? 'editor');
       } catch {
@@ -128,6 +146,7 @@ export default function App() {
     setPhoto(null);
     setCreatedAt(null);
     setEdit(DEFAULT_EDIT);
+    setFrameText('');
     setError(null);
     exportBlobRef.current = null;
     setExportUrl((old) => {
@@ -158,14 +177,14 @@ export default function App() {
   // ---- persist edit state (debounced) so a refresh restores work ----
   useEffect(() => {
     if (!photo || (screen !== 'editor' && screen !== 'done')) return;
-    const id = window.setTimeout(() => saveState({ edit, frameId: frame?.id ?? null, screen }), 300);
+    const id = window.setTimeout(() => saveState({ edit, frameId: frame?.id ?? null, frameText, screen }), 300);
     return () => clearTimeout(id);
-  }, [photo, edit, frame, screen]);
+  }, [photo, edit, frame, frameText, screen]);
 
   // ---- keep an up-to-date export for print + done preview ----
   const refreshExport = useCallback(async () => {
     if (!photo) return null;
-    const blob = await exportPng(photo, edit, frameImage);
+    const blob = await exportPng(photo, edit, frameImage, overlay);
     exportBlobRef.current = blob;
     exportDirty.current = false;
     setExportUrl((old) => {
@@ -173,7 +192,7 @@ export default function App() {
       return URL.createObjectURL(blob);
     });
     return blob;
-  }, [photo, edit, frameImage]);
+  }, [photo, edit, frameImage, overlay, fontEpoch]);
 
   useEffect(() => {
     exportDirty.current = true;
@@ -261,6 +280,8 @@ export default function App() {
             edit={edit}
             onEdit={setEdit}
             frame={frameImage}
+            overlay={overlay}
+            fontEpoch={fontEpoch}
             onReset={() => setEdit(DEFAULT_EDIT)}
             countdown={countdown}
             changePhoto={
@@ -271,6 +292,7 @@ export default function App() {
             framePicker={
               <FramePicker frames={frames} error={framesError} selectedId={frame?.id ?? null} onSelect={setFrameId} />
             }
+            textInput={<FrameTextInput value={frameText} onChange={setFrameText} available={!!frame?.textArea} />}
             actions={actions}
             onDone={() => setScreen('done')}
           />

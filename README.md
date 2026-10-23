@@ -76,6 +76,27 @@ The picker loads only the small thumbnails. The full frame loads when a customer
 
 No code changes are needed. The first entry is the default frame and is also shown on the landing page.
 
+### Custom text on the frame
+
+Customers can type their own words, such as a name, into the empty bottom band of a frame. The text is drawn in the frame's green, curved along the bottom arc, and saved into the PNG and the prints. Thai vowel and tone marks stay attached to their letters, and long text shrinks to fit. The limit is 40 characters, where Thai vowel and tone marks each count as one.
+
+Only frames with `"textArea"` in `frames.json` offer it: the 4 classic frames. The picker marks them with an **Aa** badge. On the inhaler frames the band already holds "Your Own Herbal Inhaler", so the text box is disabled there.
+
+```json
+{ "id": "classic-teal", "name": "เขียวหยก", "file": "classic-teal.png", "textArea": {} }
+```
+
+`{}` uses the defaults measured from these frames (`DEFAULT_TEXT_AREA` in `src/config.ts`). A new frame with a different layout can override any of them, as fractions of the circle radius and degrees:
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| `radius` | `0.726` | middle of the text band |
+| `height` | `0.1` | letter height |
+| `maxAngle` | `150` | widest arc the text may cover, centred on the bottom |
+| `color` | `"#4A8A2E"` | text colour |
+
+For example: `"textArea": { "radius": 0.7, "color": "#5A0A2E" }`. The text uses Prompt SemiBold.
+
 The original artwork is 4500 × 4500 px, about 1.2 MB per file, which is too heavy for phones. The shipped files were made with the optional helper below. It resizes to 1024 px, more than the 709 px export, applies a 256-colour palette (about 80 KB per frame) and writes the thumbnail:
 
 ```bash

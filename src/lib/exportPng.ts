@@ -1,4 +1,5 @@
 import { EXPORT_PX, EXPORT_PX_PER_METRE } from '../config';
+import type { FrameOverlay } from './arcText';
 import { compose } from './compose';
 import type { EditState, Photo } from './types';
 
@@ -59,19 +60,29 @@ function physChunk(ppm: number): Uint8Array {
 }
 
 /** Renders the final EXPORT_PX square with a circular alpha mask. */
-export function renderExportCanvas(photo: Photo, edit: EditState, frame: HTMLImageElement | null) {
+export function renderExportCanvas(
+  photo: Photo,
+  edit: EditState,
+  frame: HTMLImageElement | null,
+  overlay: FrameOverlay | null = null,
+) {
   const canvas = document.createElement('canvas');
   canvas.width = EXPORT_PX;
   canvas.height = EXPORT_PX;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D not available');
-  compose(ctx, EXPORT_PX, photo, edit, frame);
+  compose(ctx, EXPORT_PX, photo, edit, frame, overlay);
   return canvas;
 }
 
 /** Final print PNG: EXPORT_PX², transparent corners, ≈600 DPI pHYs metadata. */
-export async function exportPng(photo: Photo, edit: EditState, frame: HTMLImageElement | null): Promise<Blob> {
-  const canvas = renderExportCanvas(photo, edit, frame);
+export async function exportPng(
+  photo: Photo,
+  edit: EditState,
+  frame: HTMLImageElement | null,
+  overlay: FrameOverlay | null = null,
+): Promise<Blob> {
+  const canvas = renderExportCanvas(photo, edit, frame, overlay);
   const raw = await new Promise<Blob>((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png'),
   );

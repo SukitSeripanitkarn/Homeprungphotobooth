@@ -26,6 +26,23 @@ export interface FrameDef {
   file: string;
   /** Optional small preview for the picker; falls back to `file`. */
   thumb?: string;
+  /**
+   * Present when the frame has an empty band where customers can add their
+   * own curved text along the bottom. All fields are optional; see
+   * DEFAULT_TEXT_AREA in config.ts.
+   */
+  textArea?: Partial<TextArea>;
+}
+
+/** Bottom-arc text band, in fractions of the circle radius / degrees. */
+export interface TextArea {
+  /** Radius of the middle of the text band. */
+  radius: number;
+  /** Target letter height. */
+  height: number;
+  /** Widest arc the text may cover, centred on the bottom. */
+  maxAngle: number;
+  color: string;
 }
 
 export interface FrameEntry extends FrameDef {

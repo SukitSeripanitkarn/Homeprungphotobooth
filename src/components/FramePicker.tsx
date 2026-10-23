@@ -25,6 +25,11 @@ export function FramePicker({ frames, error, selectedId, onSelect }: Props) {
             onClick={() => onSelect(f.id)}
           >
             <img src={f.thumbUrl} alt="" width={64} height={64} loading="lazy" decoding="async" />
+            {f.textArea && (
+              <span className="frames__badge" title={t.frameTextBadge} aria-label={t.frameTextBadge}>
+                Aa
+              </span>
+            )}
             <span>{f.name}</span>
           </button>
         ))}

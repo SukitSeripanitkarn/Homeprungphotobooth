@@ -19,6 +19,8 @@ export interface PhotoRecord {
 export interface StateRecord {
   edit: EditState;
   frameId: string | null;
+  /** Optional text the customer typed for the frame band. */
+  frameText?: string;
   screen: SavedScreen;
 }
 

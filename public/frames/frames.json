@@ -1,8 +1,8 @@
 [
-  {"id": "classic-yellow-purple", "name": "เหลืองม่วง", "file": "classic-yellow-purple.png", "thumb": "thumbs/classic-yellow-purple.png"},
-  {"id": "classic-teal", "name": "เขียวหยก", "file": "classic-teal.png", "thumb": "thumbs/classic-teal.png"},
-  {"id": "classic-red", "name": "แดงทับทิม", "file": "classic-red.png", "thumb": "thumbs/classic-red.png"},
-  {"id": "classic-white-teal", "name": "ขาวลายเขียว", "file": "classic-white-teal.png", "thumb": "thumbs/classic-white-teal.png"},
+  {"id": "classic-yellow-purple", "name": "เหลืองม่วง", "file": "classic-yellow-purple.png", "thumb": "thumbs/classic-yellow-purple.png", "textArea": {}},
+  {"id": "classic-teal", "name": "เขียวหยก", "file": "classic-teal.png", "thumb": "thumbs/classic-teal.png", "textArea": {}},
+  {"id": "classic-red", "name": "แดงทับทิม", "file": "classic-red.png", "thumb": "thumbs/classic-red.png", "textArea": {}},
+  {"id": "classic-white-teal", "name": "ขาวลายเขียว", "file": "classic-white-teal.png", "thumb": "thumbs/classic-white-teal.png", "textArea": {}},
   {"id": "inhaler-purple-red", "name": "ม่วงแดง · ยาดม", "file": "inhaler-purple-red.png", "thumb": "thumbs/inhaler-purple-red.png"},
   {"id": "inhaler-red-green", "name": "แดงเขียว · ยาดม", "file": "inhaler-red-green.png", "thumb": "thumbs/inhaler-red-green.png"},
   {"id": "inhaler-orange-green", "name": "ส้มเขียว · ยาดม", "file": "inhaler-orange-green.png", "thumb": "thumbs/inhaler-orange-green.png"},
