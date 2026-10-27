@@ -1,32 +1,35 @@
 /*
- * Baihor / Homprung CI tokens, sampled from the client's own assets:
- *  - Homprung frames ("HOMPRUNG BY BAIHOR"): green #4A8A2E, teal #1A7A6E,
- *    yellow #EADE00, maroon #4E001E
- *  - ตราใบห่อ logo wordmark: ink #241F21
- * --brand-primary is a slightly deeper shade of the frame green so white
- *   button text meets WCAG AA contrast.
+ * Homprung by Baihor CI tokens, from the brand guidebook (HP_Guidebook):
+ *   brown #593015 (50%) · olive #605F3D (30%) · cream #EDE8D4 (15%) ·
+ *   beige #D4C8B7 (5%) · light gold accent. Mood: classic contemporary +
+ *   art deco, "minimal Thai luxury".
+ * Guidebook fonts: Lovelace / Kulachat Serif (display, titles) and Garet /
+ * Anantason (sections, body). They are commercial, so the stacks list them
+ * first (used if installed or added as web fonts — see README) and fall back
+ * to the closest Google Fonts: Playfair Display / Chonburi and Urbanist / Anuphan.
  */
 :root {
-  --brand-primary: #3e7a25; /* Homprung green (deepened) – buttons, headings */
-  --brand-primary-dark: #2f5f1b; /* hover / pressed */
-  --brand-green: #4a8a2e; /* exact frame/text green */
-  --brand-secondary: #1a7a6e; /* teal from the frame patterns */
-  --brand-accent: #5a0a2e; /* maroon flower ornament – Print button */
-  --brand-accent-dark: #3f0620;
-  --brand-highlight: #eade00; /* yellow inner ring – selection highlight */
-  --bg: #ffffff;
-  --bg-soft: #f3f8ee; /* pale green tint for sections */
+  --brand-primary: #593015; /* brown – buttons, headings, logo */
+  --brand-primary-dark: #42230f; /* hover / pressed */
+  --brand-secondary: #605f3d; /* olive */
+  --brand-accent: #605f3d; /* olive – second button style */
+  --brand-accent-dark: #4a4930;
+  --brand-highlight: #c2a36b; /* light gold – selection, art-deco lines */
+  --brand-green: #4a8a2e; /* lettering green printed on the sticker frames */
+  --bg: #fbf9f4; /* very light cream page */
+  --bg-soft: #ede8d4; /* cream – panels, chips */
   --surface: #ffffff;
-  --text: #241f21; /* logo wordmark ink */
-  --text-muted: #5d5a55;
-  --border: #dde8d4;
-  --danger: #b3261e;
+  --text: #2b1a10; /* deep brown ink */
+  --text-muted: #6e5e50;
+  --border: #d4c8b7; /* beige */
+  --danger: #a3261e;
 
-  --radius: 16px;
+  --radius: 18px;
   --radius-sm: 10px;
   --radius-pill: 999px;
-  --shadow: 0 6px 24px rgba(47, 95, 27, 0.14);
+  --shadow: 0 6px 24px rgba(89, 48, 21, 0.12);
 
-  --font-heading: 'Niramit', 'Noto Sans Thai', system-ui, sans-serif;
-  --font-body: 'Niramit', 'Noto Sans Thai', system-ui, sans-serif;
+  --font-display: 'Lovelace', 'Kulachat Serif', 'Playfair Display', 'Chonburi', Georgia, serif;
+  --font-heading: 'Garet', 'Anantason', 'Urbanist', 'Anuphan', system-ui, sans-serif;
+  --font-body: 'Garet', 'Anantason', 'Urbanist', 'Anuphan', system-ui, sans-serif;
 }

@@ -94,11 +94,21 @@ Shared types and limits live in `api/_lib/classSession.ts` (`CLASS_SESSION_MINUT
 
 ## Frames
 
-The app ships the client's 12 "HOMPRUNG BY BAIHOR" frames: 4 classic and 4 + 4 with the "Your Own Herbal Inhaler" (ยาดม) tagline. They live in `public/frames/` and are listed in **`public/frames/frames.json`**:
+The app ships the client's 24 "HOMPRUNG BY BAIHOR" frames from `sticker.ai` (8 colourways × 3 designs). The picker lists them in this order:
+
+| Group | Artboards | Design | Custom text |
+| --- | --- | --- | --- |
+| `classic-*` | 9–16 | "HOMPRUNG BY BAIHOR" on top, empty bottom band | ✅ |
+| `thai-*` (· ไทย) | 17–24 | "หอมปรุง บาย ใบห่อ" on top, empty bottom band | ✅ |
+| `inhaler-*` (· ยาดม) | 1–8 | "Your Own Herbal Inhaler" printed at the bottom | – |
+
+The colourways, in artboard order, are: white-teal (ขาวลายเขียว), red-green (แดงเขียว), orange-red (ส้มแดง), orange-green (ส้มเขียว), yellow-purple (เหลืองม่วง), teal (เขียวหยก), red (แดงทับทิม) and purple-red (ม่วงแดง).
+
+The frames live in `public/frames/` and are listed in **`public/frames/frames.json`**:
 
 ```json
 [
-  { "id": "classic-yellow-purple", "name": "เหลืองม่วง", "file": "classic-yellow-purple.png", "thumb": "thumbs/classic-yellow-purple.png" }
+  { "id": "classic-white-teal", "name": "ขาวลายเขียว", "file": "classic-white-teal.png", "thumb": "thumbs/classic-white-teal.png", "textArea": {} }
 ]
 ```
 
@@ -114,7 +124,7 @@ No code changes are needed. The first entry is the default frame and is also sho
 
 Customers can type their own words, such as a name, into the empty bottom band of a frame. The text is drawn in the frame's green, curved along the bottom arc, and saved into the PNG and the prints. Thai vowel and tone marks stay attached to their letters, and long text shrinks to fit. The limit is 40 characters, where Thai vowel and tone marks each count as one.
 
-Only frames with `"textArea"` in `frames.json` offer it: the 4 classic frames. The picker marks them with an **Aa** badge. On the inhaler frames the band already holds "Your Own Herbal Inhaler", so the text box is disabled there.
+Only frames with `"textArea"` in `frames.json` offer it: the 16 classic and Thai frames. The picker marks them with an **Aa** badge. On the inhaler frames the band already holds "Your Own Herbal Inhaler", so the text box is disabled there.
 
 ```json
 { "id": "classic-teal", "name": "เขียวหยก", "file": "classic-teal.png", "textArea": {} }
@@ -131,7 +141,9 @@ Only frames with `"textArea"` in `frames.json` offer it: the 4 classic frames. T
 
 For example: `"textArea": { "radius": 0.7, "color": "#5A0A2E" }`. The text uses Niramit SemiBold (600).
 
-The original artwork is 4500 × 4500 px, about 1.2 MB per file, which is too heavy for phones. The shipped files were made with the optional helper below. It resizes to 1024 px, more than the 827 px export, applies a 256-colour palette (about 80 KB per frame) and writes the thumbnail:
+**How the shipped files were made:**
+1. Each `sticker.ai` artboard (40 × 40 mm, transparent centre and corners) was rendered at 1024 px with poppler: `pdftocairo -png -transp -scale-to 1024 -singlefile -f N -l N sticker.ai fN`.
+2. They were then reduced with the optional helper below. It resizes, applies a 256-colour palette (about 70 KB per frame) and writes the thumbnail.
 
 ```bash
 pip install pillow
@@ -144,41 +156,62 @@ python3 scripts/prepare-frames.py ~/Downloads/new-frame.png my-frame-id
 
 ## Brand tokens
 
-The tokens are CSS variables in `src/styles/brand.css`. The colours were sampled from the client's own artwork: the Homprung frames and the ตราใบห่อ logo.
+The tokens are CSS variables in `src/styles/brand.css`, taken from the brand guidebook (`HP_Guidebook.pdf`, "Classic contemporary + art deco", "minimal Thai luxury").
 
-| Token | Value | Source / use |
+| Token | Value | Guidebook / use |
 | --- | --- | --- |
-| `--brand-green` | `#4A8A2E` | exact frame text/ring green |
-| `--brand-primary` | `#3E7A25` | the frame green, slightly deeper so white button text passes WCAG AA; primary buttons, headings |
-| `--brand-primary-dark` | `#2F5F1B` | hover / pressed |
-| `--brand-secondary` | `#1A7A6E` | teal from the frame patterns |
-| `--brand-accent` | `#5A0A2E` | maroon flower ornament; Print button |
-| `--brand-highlight` | `#EADE00` | yellow inner ring; selected-frame highlight |
-| `--bg` / `--bg-soft` | `#FFFFFF` / `#F3F8EE` | page / soft sections |
-| `--text` / `--text-muted` | `#241F21` / `#5D5A55` | logo wordmark ink / secondary text |
-| `--radius` / `--radius-pill` | `16px` / `999px` | cards / rounded buttons |
-| `--font-heading` | `Niramit` (500/600), Noto Sans Thai | Google Fonts; headings, buttons |
-| `--font-body` | `Niramit` (400), Noto Sans Thai | Google Fonts; body text |
+| `--brand-primary` | `#593015` | brown (50%): primary buttons, headings, logo |
+| `--brand-primary-dark` | `#42230F` | hover / pressed |
+| `--brand-secondary`, `--brand-accent` | `#605F3D` | olive (30%): second button style |
+| `--bg-soft` | `#EDE8D4` | cream (15%): panels, chips, home-screen icon |
+| `--border` | `#D4C8B7` | beige (5%): borders, dividers |
+| `--brand-highlight` | `#C2A36B` | light gold: selected frame, art-deco arch decoration |
+| `--brand-green` | `#4A8A2E` | the lettering green printed on the frames (custom frame text matches it) |
+| `--bg` / `--text` / `--text-muted` | `#FBF9F4` / `#2B1A10` / `#6E5E50` | page, ink, secondary text |
+| `--radius` / `--radius-pill` | `18px` / `999px` | cards / rounded buttons |
+
+### Fonts
+
+The guidebook's fonts are commercial. Each font stack lists them first, so they're used on any device that has them, and falls back to the closest free Google Fonts:
+
+| Role (guidebook) | Guidebook font | Google Fonts stand-in | CSS variable |
+| --- | --- | --- | --- |
+| Display / title, English | Lovelace | Playfair Display | `--font-display` |
+| Display / title, Thai | Kulachat Serif | Chonburi | `--font-display` |
+| Section / body, English | Garet | Urbanist | `--font-heading`, `--font-body` |
+| Section / body, Thai | Anantason | Anuphan | `--font-heading`, `--font-body` |
+
+**To use the real fonts on every device** (needs a web-font licence), put the `.woff2` files in `public/fonts/` and add `@font-face` rules to `src/styles/brand.css` using the same family names, e.g.
+
+```css
+@font-face { font-family: 'Lovelace'; src: url('/fonts/Lovelace-Regular.woff2') format('woff2'); font-weight: 400 600; font-display: swap; }
+```
+
+The custom text on the frames still uses Niramit SemiBold, as requested earlier (`FRAME_TEXT_FONT` in `src/config.ts`).
 
 ### Brand assets
-The asset paths are in `src/brand.ts`, and the files are in `public/brand/`:
+The asset paths are in `src/brand.ts`, and the files are in `public/brand/`. They come from the client's logo file `001_Ai` (vector, recoloured to brand brown `#593015`):
 
-- `logo-baihor.webp`: the ตราใบห่อ / Tra Baihor logo (seal + wordmark) supplied by the client, shown in the header.
-- `favicon-32.png`, `favicon-64.png`, `apple-touch-icon.png`: cut from the round "Since 1974" seal in that logo. The touch icon has a white background because iOS turns transparent corners black.
-- `leaf.svg`: a simple leaf used as background decoration. This is still a stand-in for the site's leaf motif (`https://baihor.com/wp-content/uploads/2026/06/01Leaf.webp`). To use the real one, save it to `public/brand/` and update `BRAND.leaf` and the two `url('/brand/leaf.svg')` references in `src/styles/app.css`.
+- `homprung-logo.svg`: the primary logo (arch mark over "HOMPRUNG / BY BAIHOR").
+- `homprung-mark.svg`: the mark only. It's shown in the header and on info screens, and is also the SVG favicon.
+- `homprung-wordmark.svg`: the secondary logo ("HOMPRUNG / BY BAIHOR"). It's shown in the header next to the mark.
+- `favicon-32.png`, `favicon-64.png`: the mark on a transparent background.
+- `apple-touch-icon.png`, `icon-512.png`: the mark on cream. iOS turns transparent icon corners black, so these need a solid background.
+- `deco-arches.svg`: thin gold nested arches (the art-deco motif from the moodboard), used as corner decoration.
 
 ## Assumptions (please confirm or correct)
 
-1. **The colours come from the client's logo and frames, not from the baihor.com stylesheets.** The build environment couldn't reach the site. The font is Niramit (นิรมิต), chosen by the client. To change colours or fonts, update `src/styles/brand.css`, `FRAME_TEXT_FONT` in `src/config.ts`, and the Google Fonts link in `index.html`.
-2. The leaf decoration is a stand-in for the site's leaf motif (see "Brand assets").
+1. Colours, logo and fonts follow the Homprung brand guidebook (see "Brand tokens"). To change them, update `src/styles/brand.css`, `src/brand.ts`, `FRAME_TEXT_FONT` in `src/config.ts`, and the Google Fonts link in `index.html`.
+2. The guidebook fonts are replaced by free stand-ins until web-font files are provided (see "Fonts").
 3. The frame names in `frames.json` are descriptive Thai colour names I chose ("· ยาดม" marks the "Your Own Herbal Inhaler" versions). Rename them freely.
 4. "1 hour" means 60 minutes from when the admin starts the class (`CLASS_SESSION_MINUTES` in `api/_lib/classSession.ts`). The class closes and its photos are deleted then, so print or download the PDFs before it ends. An admin page already open keeps the downloaded photos in memory until it is closed.
 5. Frame files are square transparent PNGs designed for a circular crop.
 6. Students' stickers are rendered at 35 mm / 600 DPI (827 px; `PRINT_DIAMETER_MM` and `EXPORT_DPI` in `src/config.ts`). The admin can print them at another size (the "ขนาดสติกเกอร์ผู้เรียน" setting). Sheet defaults (A3, 12 mm margin, 3 mm gap, 1 mm bleed) are `SHEET_DEFAULTS` in the same file.
-9. The admin page is in Thai only (staff-facing). The student app has Thai and English.
-10. The MicroCut software's exact import options weren't available to test. The PDF uses the common `CutContour` print-and-cut convention, with a DXF as a fallback. If the cutter needs more room for its marks, increase "ขอบกระดาษ".
-7. The UI spells the brand **Homprung / หอมปรุง**, and the Vercel project and domain are `homprungphotobooth` (the GitHub repository is still named `Homeprungphotobooth`, which doesn't affect the site).
-8. The "เปิดกล้องถ่ายรูป" shortcut opens the front (selfie) camera. For the rear camera, change `capture` in `src/components/PhotoInput.tsx` to `environment`.
+7. The new frame artwork (`sticker.ai`) is drawn at **40 mm**, while the app prints students' stickers at **35 mm** by default. Everything scales cleanly. If the stickers should be 40 mm, change "ขนาดสติกเกอร์ผู้เรียน" on the admin page (and `PRINT_DIAMETER_MM` for the export resolution).
+8. The admin page is in Thai only (staff-facing). The student app has Thai and English.
+9. The MicroCut software's exact import options weren't available to test. The PDF uses the common `CutContour` print-and-cut convention, with a DXF as a fallback. If the cutter needs more room for its marks, increase "ขอบกระดาษ".
+10. The UI spells the brand **Homprung / หอมปรุง**, and the Vercel project and domain are `homprungphotobooth` (the GitHub repository is still named `Homeprungphotobooth`, which doesn't affect the site).
+11. The "เปิดกล้องถ่ายรูป" shortcut opens the front (selfie) camera. For the rear camera, change `capture` in `src/components/PhotoInput.tsx` to `environment`.
 
 ## Deploy to Vercel
 
@@ -223,7 +256,7 @@ api/                 Vercel Functions (session, submit, admin/login, admin/sessi
                      Vercel only compiles TypeScript there)
 public/
   frames/            PNG frames + thumbs/ + frames.json
-  brand/             Baihor logo, favicons, leaf decoration
+  brand/             Homprung logo/mark/wordmark (SVG), icons, art-deco decoration
 scripts/
   prepare-frames.py  optional: resize/optimise new frames + thumbnails
 src/

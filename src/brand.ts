@@ -1,7 +1,14 @@
-/** Brand asset paths (files live in /public/brand). See README "Brand assets". */
+/**
+ * Homprung by Baihor brand assets (files in /public/brand), from the client's
+ * logo artwork (001_Ai) in the brand brown #593015. See README "Brand assets".
+ */
 export const BRAND = {
-  /** ตราใบห่อ / Tra Baihor logo (seal + wordmark), 300×287. */
-  logo: '/brand/logo-baihor.webp',
-  leaf: '/brand/leaf.svg',
-  siteUrl: 'https://baihor.com/',
+  /** Primary logo: arch mark above the HOMPRUNG / BY BAIHOR wordmark (portrait). */
+  logo: '/brand/homprung-logo.svg',
+  /** Arch mark only (portrait, ~0.57:1). */
+  mark: '/brand/homprung-mark.svg',
+  /** Secondary logo: HOMPRUNG / BY BAIHOR wordmark only (landscape, ~4.5:1). */
+  wordmark: '/brand/homprung-wordmark.svg',
+  /** Art-deco arch line motif used as page decoration. */
+  deco: '/brand/deco-arches.svg',
 } as const;

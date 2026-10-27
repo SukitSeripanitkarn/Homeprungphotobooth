@@ -19,7 +19,10 @@ body {
 }
 
 h1,
-h2,
+h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+}
 .btn,
 .chip,
 .lang-toggle {
@@ -35,9 +38,10 @@ img {
   max-width: 560px;
   margin: 0 auto;
   padding: 0 16px calc(24px + env(safe-area-inset-bottom));
+  /* Art-deco arches (from the moodboard) in light gold */
   background:
-    url('/brand/leaf.svg') no-repeat right -28px top 72px / 120px,
-    url('/brand/leaf.svg') no-repeat left -36px bottom 24px / 96px;
+    url('/brand/deco-arches.svg') no-repeat right -24px top 84px / 84px,
+    url('/brand/deco-arches.svg') no-repeat left -28px bottom 24px / 72px;
 }
 
 /* ---------- header ---------- */
@@ -49,8 +53,18 @@ img {
   padding: calc(12px + env(safe-area-inset-top)) 0 12px;
   border-bottom: 1px solid var(--border);
 }
-.header__logo {
-  height: 64px;
+.header__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.header__mark {
+  height: 56px;
+  width: auto;
+}
+.header__wordmark {
+  height: 26px;
   width: auto;
 }
 .header__right {
@@ -94,8 +108,8 @@ img {
 }
 .screen__title {
   margin: 0;
-  font-size: 22px;
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 500;
   color: var(--brand-primary);
 }
 .muted {
@@ -131,8 +145,8 @@ img {
 }
 .landing__title {
   margin: 8px 0 0;
-  font-size: 28px;
-  font-weight: 600;
+  font-size: 30px;
+  font-weight: 500;
   color: var(--brand-primary);
 }
 .landing__tagline {
@@ -418,7 +432,7 @@ img {
 .done__preview {
   width: 200px;
   height: 200px;
-  filter: drop-shadow(0 6px 16px rgba(31, 77, 41, 0.18));
+  filter: drop-shadow(0 6px 16px rgba(89, 48, 21, 0.2));
 }
 
 /* ---------- shared form bits ---------- */

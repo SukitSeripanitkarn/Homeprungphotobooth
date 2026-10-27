@@ -17,6 +17,9 @@
   height: 56px;
 }
 .admin__header h1 {
+  font-weight: 500;
+}
+.admin__header h1 {
   flex: 1;
   margin: 0;
   font-size: 20px;
@@ -335,7 +338,7 @@
   align-items: flex-start;
   padding: 16px;
   overflow-y: auto;
-  background: rgba(36, 31, 33, 0.5);
+  background: rgba(43, 26, 16, 0.5);
 }
 .modal__panel {
   width: 100%;

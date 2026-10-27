@@ -34,7 +34,9 @@ function vercelApiDev(): Plugin {
     configureServer(server: ViteDevServer) {
       server.middlewares.use(async (req, res, next) => {
         const path = req.url?.split('?')[0] ?? '';
-        if (!path.startsWith('/api/')) return next();
+        // Endpoints have no extension; /api/_lib/*.ts source files are also
+        // imported by the browser app and must be served by Vite as modules.
+        if (!path.startsWith('/api/') || /\.[a-z0-9]+$/i.test(path)) return next();
         const file = resolve(import.meta.dirname, `.${path}.ts`);
         if (path.includes('..') || path.includes('/_') || !existsSync(file)) {
           res.statusCode = 404;

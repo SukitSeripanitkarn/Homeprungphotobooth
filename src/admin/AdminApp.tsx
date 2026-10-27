@@ -51,7 +51,7 @@ export default function AdminApp() {
     <I18nContext.Provider value={i18n}>
       <div className="admin">
         <header className="admin__header">
-          <img src={BRAND.logo} alt="ตราใบห่อ" height={56} width={58} />
+          <img src={BRAND.mark} alt="HOMPRUNG by BAIHOR" height={56} width={32} />
           <h1>แอดมิน · หอมปรุง Photobooth</h1>
           {auth === 'in' && (
             <button type="button" className="btn btn--ghost btn--sm" onClick={() => adminLogout().finally(() => setAuth('out'))}>
