@@ -27,36 +27,19 @@ function write(key: string, value: string) {
   }
 }
 
-const systemTheme = (): Theme => (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-
 export function usePrefs() {
   const [lang, setLang] = useState<Lang>(() => (read(LANG_KEY) === 'en' ? 'en' : 'th'));
-  // null = follow the device setting until the viewer picks one.
-  const [chosen, setChosen] = useState<Theme | null>(() => {
-    const t = read(THEME_KEY);
-    return t === 'light' || t === 'dark' ? t : null;
-  });
-  const [system, setSystem] = useState<Theme>(systemTheme);
-
-  useEffect(() => {
-    const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
-    if (!mq) return;
-    const on = () => setSystem(mq.matches ? 'dark' : 'light');
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
-  }, []);
+  // Light by default on every device; dark only when the viewer picks it.
+  const [theme, setTheme] = useState<Theme>(() => (read(THEME_KEY) === 'dark' ? 'dark' : 'light'));
 
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
 
-  const theme = chosen ?? system;
   useEffect(() => {
-    const root = document.documentElement;
-    if (chosen) root.dataset.theme = chosen;
-    else delete root.dataset.theme;
+    document.documentElement.dataset.theme = theme;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#1d140e' : '#593015');
-  }, [chosen, theme]);
+  }, [theme]);
 
   const toggleLang = useCallback(() => {
     setLang((l) => {
@@ -69,7 +52,7 @@ export function usePrefs() {
   const toggleTheme = useCallback(() => {
     const next: Theme = theme === 'dark' ? 'light' : 'dark';
     write(THEME_KEY, next);
-    setChosen(next);
+    setTheme(next);
   }, [theme]);
 
   return { lang, toggleLang, theme, toggleTheme };

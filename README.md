@@ -45,7 +45,7 @@ Only one class runs at a time; starting a new one ends the previous one.
 
 ### Language and light/dark mode
 - **Language:** both the student app and the admin page have a **TH/EN** switch. It's shared, so one choice applies to both. Strings live in `src/i18n.ts` (students) and `src/admin/adminI18n.ts` (admin).
-- **Theme:** the **☀/☾** button switches light and dark. Until someone presses it, the app follows the device's setting.
+- **Theme:** the app starts in **light mode** on every device. The **☾/☀** button switches to dark and back.
   - Both choices are remembered in the browser (`src/lib/prefs.ts`). A small script in `index.html` applies the saved theme before the page draws, so there's no flash of the wrong colours.
   - Dark colours are in `src/styles/brand.css`: deep brown backgrounds, cream text, and light-gold buttons with dark lettering.
   - The logo is drawn through a CSS mask (`BrandLogo`), so it turns cream in dark mode.
