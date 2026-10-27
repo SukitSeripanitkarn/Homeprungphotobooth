@@ -2,12 +2,12 @@
 export const SESSION_CHECK_INTERVAL_MS = 30_000;
 
 /** Physical print size of the circle. Everything below (export size, sheet text, filename) follows it. */
-export const PRINT_DIAMETER_MM = 35;
+export const PRINT_DIAMETER_MM = 40;
 /** Same size in centimetres for UI copy, e.g. "3.5". */
 export const PRINT_DIAMETER_CM = String(PRINT_DIAMETER_MM / 10);
 /** Export resolution. Change for a different print shop requirement. */
 export const EXPORT_DPI = 600;
-/** Export width/height in px: 35 mm at 600 DPI = 827 px. */
+/** Export width/height in px: 40 mm at 600 DPI = 945 px (the frame artwork's own size). */
 export const EXPORT_PX = Math.round((PRINT_DIAMETER_MM / 25.4) * EXPORT_DPI);
 /** Pixels per metre written into the PNG pHYs chunk (EXPORT_PX / diameter). */
 export const EXPORT_PX_PER_METRE = Math.round(EXPORT_PX / (PRINT_DIAMETER_MM / 1000));

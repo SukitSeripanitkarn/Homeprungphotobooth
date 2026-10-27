@@ -27,6 +27,8 @@ export interface SheetSettings {
   copiesPerPerson: number;
   /** Draw a thin cut line when printing from the browser (for scissors). */
   cutGuide: boolean;
+  /** Bumped when a default changes, so saved settings can be migrated once. */
+  version?: number;
 }
 
 export const DEFAULT_SETTINGS: SheetSettings = {
@@ -37,6 +39,7 @@ export const DEFAULT_SETTINGS: SheetSettings = {
   classDiameterMm: PRINT_DIAMETER_MM,
   copiesPerPerson: SHEET_DEFAULTS.copiesPerPerson,
   cutGuide: false,
+  version: 2,
 };
 
 const SETTINGS_KEY = 'homprung-admin:settings';
@@ -58,7 +61,15 @@ function writeJson(key: string, value: unknown) {
   }
 }
 
-export const loadSettings = () => readJson<SheetSettings>(SETTINGS_KEY, DEFAULT_SETTINGS);
+export function loadSettings(): SheetSettings {
+  // Check the version that was saved, not the merged-in default's.
+  const saved = readJson<Partial<SheetSettings>>(SETTINGS_KEY, {});
+  const s = { ...DEFAULT_SETTINGS, ...saved };
+  // v2: the default student sticker went from 35 mm to 40 mm (the frame
+  // artwork's size). Move admins still on the old default; keep custom sizes.
+  if ((saved.version ?? 1) < 2 && saved.classDiameterMm === 35) s.classDiameterMm = PRINT_DIAMETER_MM;
+  return { ...s, version: DEFAULT_SETTINGS.version };
+}
 export const saveSettings = (s: SheetSettings) => writeJson(SETTINGS_KEY, s);
 export const loadCopies = (sessionId: string) => readJson<Record<string, number>>(copiesKey(sessionId), {});
 export const saveCopies = (sessionId: string, copies: Record<string, number>) => writeJson(copiesKey(sessionId), copies);

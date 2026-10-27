@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { createPortal } from 'react-dom';
 import type { AdminSessionResponse, SubmissionMeta } from '../../api/_lib/classSession';
 import { BRAND } from '../brand';
+import { PRINT_DIAMETER_MM } from '../config';
 import { STRINGS, I18nContext } from '../i18n';
 import {
   ApiError,
@@ -463,7 +464,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
                       min={10}
                       max={250}
                       value={x.diameterMm}
-                      onChange={(e) => updateExtra(x.id, { diameterMm: Math.max(10, Math.min(250, Number(e.target.value) || 35)) })}
+                      onChange={(e) => updateExtra(x.id, { diameterMm: Math.max(10, Math.min(250, Number(e.target.value) || PRINT_DIAMETER_MM)) })}
                     />
                     มม.
                   </label>

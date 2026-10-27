@@ -11,7 +11,7 @@
 export const CLASS_SESSION_MINUTES = 60;
 /** Upper bound on photos per class, to stop abuse of the public submit endpoint. */
 export const MAX_SUBMISSIONS_PER_CLASS = 200;
-/** Largest accepted sticker image (decoded bytes). A 35 mm JPEG is ~150–300 KB. */
+/** Largest accepted sticker image (decoded bytes). A 40 mm JPEG (945 px) is ~200–400 KB. */
 export const MAX_IMAGE_BYTES = 1_500_000;
 export const MAX_NAME_LENGTH = 40;
 export const MAX_WORKSHOP_LENGTH = 60;
