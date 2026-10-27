@@ -7,7 +7,7 @@ A photobooth for Baihor / Homprung workshops. Students scan the class QR code, p
 - **A class lasts 1 hour** from when the admin starts it. After that, every photo is deleted from the server automatically.
 - **Hosting:** Vite + React + TypeScript on Vercel, with a few Vercel Functions in `api/` and Upstash Redis for the photos of the running class.
 
-Target URL: `https://homeprungphotobooth.vercel.app` (students) and `https://homeprungphotobooth.vercel.app/admin` (admin).
+Target URL: `https://homprungphotobooth.vercel.app` (students) and `https://homprungphotobooth.vercel.app/admin` (admin).
 
 ---
 
@@ -177,16 +177,22 @@ The asset paths are in `src/brand.ts`, and the files are in `public/brand/`:
 6. Students' stickers are rendered at 35 mm / 600 DPI (827 px; `PRINT_DIAMETER_MM` and `EXPORT_DPI` in `src/config.ts`). The admin can print them at another size (the "ขนาดสติกเกอร์ผู้เรียน" setting). Sheet defaults (A3, 12 mm margin, 3 mm gap, 1 mm bleed) are `SHEET_DEFAULTS` in the same file.
 9. The admin page is in Thai only (staff-facing). The student app has Thai and English.
 10. The MicroCut software's exact import options weren't available to test. The PDF uses the common `CutContour` print-and-cut convention, with a DXF as a fallback. If the cutter needs more room for its marks, increase "ขอบกระดาษ".
-7. The UI spells the brand **Homprung / หอมปรุง**, while the Vercel project name stays `homeprungphotobooth`.
+7. The UI spells the brand **Homprung / หอมปรุง**, and the Vercel project and domain are `homprungphotobooth` (the GitHub repository is still named `Homeprungphotobooth`, which doesn't affect the site).
 8. The "เปิดกล้องถ่ายรูป" shortcut opens the front (selfie) camera. For the rear camera, change `capture` in `src/components/PhotoInput.tsx` to `environment`.
 
 ## Deploy to Vercel
 
 1. Push this repo to GitHub.
 2. In Vercel, go to **Add New… → Project** and import the repo.
-3. Set the project name to **`homeprungphotobooth`**, the framework preset to **Vite**, the build command to `npm run build`, and the output directory to `dist` (also set in `vercel.json`).
-4. Deploy. The app will be at `https://homeprungphotobooth.vercel.app`.
-5. If the name is taken, use **`homprung-photobooth`** (`https://homprung-photobooth.vercel.app`) and update the QR code.
+3. Set the project name to **`homprungphotobooth`** and the framework preset to **Vite** (build `npm run build`, output `dist`, also set in `vercel.json`).
+4. Do the one-time set-up above (Upstash + `ADMIN_PASSWORD`), then deploy. The app will be at `https://homprungphotobooth.vercel.app`.
+
+### Moving from the old name (`homeprungphotobooth`)
+Renaming a Vercel project doesn't change the domain it already has, so:
+1. **Settings → General → Project Name** → `homprungphotobooth` → Save.
+2. **Settings → Domains → Add** `homprungphotobooth.vercel.app`.
+3. Edit the old `homeprungphotobooth.vercel.app` domain → **Redirect to** `homprungphotobooth.vercel.app` (308), so old links and QR codes keep working.
+4. Open the admin page on the new address and start a new class so its QR code uses the new domain.
 
 ## QR code
 
