@@ -1,5 +1,5 @@
 import { Redis } from '@upstash/redis';
-import type { ClassSession, SubmissionMeta } from '../../shared/classSession.js';
+import type { ClassSession, SubmissionMeta } from './classSession.js';
 
 /**
  * Storage for the running class. Every key expires at the class end time,

@@ -1,4 +1,4 @@
-import type { PublicClassSession } from '../shared/classSession.js';
+import type { PublicClassSession } from './_lib/classSession.js';
 import { error, handler, json } from './_lib/http.js';
 import { getStore } from './_lib/store.js';
 

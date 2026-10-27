@@ -90,7 +90,7 @@ Defaults: **A3**, 12 mm margin (room for the cutter's registration marks), 3 mm 
 | `GET/POST/DELETE /api/admin/session` | admin | Current class and photo list, start a class, end it and delete everything |
 | `GET/DELETE /api/admin/photo?id=` | admin | One photo, remove one photo |
 
-Shared types and limits live in `shared/classSession.ts` (`CLASS_SESSION_MINUTES = 60`).
+Shared types and limits live in `api/_lib/classSession.ts` (`CLASS_SESSION_MINUTES = 60`).
 
 ## Frames
 
@@ -172,7 +172,7 @@ The asset paths are in `src/brand.ts`, and the files are in `public/brand/`:
 1. **The colours come from the client's logo and frames, not from the baihor.com stylesheets.** The build environment couldn't reach the site. The font is Niramit (นิรมิต), chosen by the client. To change colours or fonts, update `src/styles/brand.css`, `FRAME_TEXT_FONT` in `src/config.ts`, and the Google Fonts link in `index.html`.
 2. The leaf decoration is a stand-in for the site's leaf motif (see "Brand assets").
 3. The frame names in `frames.json` are descriptive Thai colour names I chose ("· ยาดม" marks the "Your Own Herbal Inhaler" versions). Rename them freely.
-4. "1 hour" means 60 minutes from when the admin starts the class (`CLASS_SESSION_MINUTES` in `shared/classSession.ts`). The class closes and its photos are deleted then, so print or download the PDFs before it ends. An admin page already open keeps the downloaded photos in memory until it is closed.
+4. "1 hour" means 60 minutes from when the admin starts the class (`CLASS_SESSION_MINUTES` in `api/_lib/classSession.ts`). The class closes and its photos are deleted then, so print or download the PDFs before it ends. An admin page already open keeps the downloaded photos in memory until it is closed.
 5. Frame files are square transparent PNGs designed for a circular crop.
 6. Students' stickers are rendered at 35 mm / 600 DPI (827 px; `PRINT_DIAMETER_MM` and `EXPORT_DPI` in `src/config.ts`). The admin can print them at another size (the "ขนาดสติกเกอร์ผู้เรียน" setting). Sheet defaults (A3, 12 mm margin, 3 mm gap, 1 mm bleed) are `SHEET_DEFAULTS` in the same file.
 9. The admin page is in Thai only (staff-facing). The student app has Thai and English.
@@ -212,8 +212,9 @@ Still to do after deploying:
 
 ```
 api/                 Vercel Functions (session, submit, admin/login, admin/session, admin/photo)
-  _lib/              storage (Upstash Redis / in-memory), auth + HTTP helpers
-shared/              types and limits used by both api/ and src/
+  _lib/              storage (Upstash Redis / in-memory), auth + HTTP helpers, and
+                     classSession.ts: types/limits shared with src/ (must stay under api/:
+                     Vercel only compiles TypeScript there)
 public/
   frames/            PNG frames + thumbs/ + frames.json
   brand/             Baihor logo, favicons, leaf decoration

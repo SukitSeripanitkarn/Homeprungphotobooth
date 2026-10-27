@@ -3,7 +3,7 @@ import type {
   PublicClassSession,
   SubmitRequest,
   SubmitResponse,
-} from '../../shared/classSession';
+} from '../../api/_lib/classSession';
 
 /** Error from the API, with the server's machine-readable `code` when given. */
 export class ApiError extends Error {
@@ -20,6 +20,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   let res: Response;
   try {
     res = await fetch(path, {
+      // Never hang forever on a stuck request.
+      signal: AbortSignal.timeout(30_000),
       ...init,
       credentials: 'same-origin',
       headers: init.body ? { 'Content-Type': 'application/json', ...init.headers } : init.headers,

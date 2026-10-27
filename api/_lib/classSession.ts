@@ -1,6 +1,10 @@
 /**
  * Types and limits shared by the browser app and the /api functions.
  * Keep this file free of browser- or Node-only APIs.
+ *
+ * It lives inside api/ on purpose: Vercel only compiles TypeScript under
+ * api/, so a runtime import of a .ts file elsewhere fails in production.
+ * (The leading underscore keeps _lib/ from becoming an endpoint.)
  */
 
 /** A class runs for this long after the admin starts it; then everything is deleted. */

@@ -1,7 +1,7 @@
 import QRCode from 'qrcode';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
-import type { AdminSessionResponse, SubmissionMeta } from '../../shared/classSession';
+import type { AdminSessionResponse, SubmissionMeta } from '../../api/_lib/classSession';
 import { BRAND } from '../brand';
 import { STRINGS, I18nContext } from '../i18n';
 import {
@@ -125,6 +125,7 @@ interface PhotoCache {
 
 function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
   const [data, setData] = useState<AdminSessionResponse | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [clockOffset, setClockOffset] = useState(0);
   const [now, setNow] = useState(Date.now());
   const [workshop, setWorkshop] = useState('');
@@ -147,9 +148,13 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
     try {
       const res = await adminGetSession();
       setData(res);
+      setLoadError(null);
       setClockOffset(res.now - Date.now());
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) onLoggedOut();
+      if (err instanceof ApiError && err.status === 401) return onLoggedOut();
+      // Show what went wrong instead of loading forever (polling keeps retrying).
+      const e = err as ApiError;
+      setLoadError(e.status ? `${e.message} (HTTP ${e.status})` : 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
     }
   }, [onLoggedOut]);
 
@@ -322,7 +327,20 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
   const set = <K extends keyof SheetSettings>(k: K, v: SheetSettings[K]) => setSettings((s) => ({ ...s, [k]: v }));
   const bleedWarning = settings.gapMm < settings.bleedMm * 2;
 
-  if (!data) return <p className="muted">กำลังโหลด…</p>;
+  if (!data) {
+    return loadError ? (
+      <div className="card login">
+        <h2>โหลดข้อมูลรอบไม่สำเร็จ</h2>
+        <p className="alert">{loadError}</p>
+        <p className="field-hint">ระบบจะลองใหม่ทุก 4 วินาที ถ้ายังไม่ได้ ส่งข้อความนี้ให้ผู้ดูแลระบบ</p>
+        <button type="button" className="btn btn--primary" onClick={refresh}>
+          ลองอีกครั้ง
+        </button>
+      </div>
+    ) : (
+      <p className="muted">กำลังโหลด…</p>
+    );
+  }
 
   return (
     <div className="admin__grid">

@@ -4,7 +4,7 @@ import {
   MAX_WORKSHOP_LENGTH,
   type AdminSessionResponse,
   type ClassSession,
-} from '../../shared/classSession.js';
+} from '../_lib/classSession.js';
 import { error, handler, isAdmin, json, randomCode, readJson } from '../_lib/http.js';
 import { getStore } from '../_lib/store.js';
 

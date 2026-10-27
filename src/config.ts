@@ -1,4 +1,4 @@
-/** How often the class-end check (and countdown) runs. The class length is CLASS_SESSION_MINUTES in shared/. */
+/** How often the class-end check (and countdown) runs. The class length is CLASS_SESSION_MINUTES in api/_lib/classSession.ts. */
 export const SESSION_CHECK_INTERVAL_MS = 30_000;
 
 /** Physical print size of the circle. Everything below (export size, sheet text, filename) follows it. */

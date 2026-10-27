@@ -6,7 +6,7 @@ import {
   type SubmissionMeta,
   type SubmitRequest,
   type SubmitResponse,
-} from '../shared/classSession.js';
+} from './_lib/classSession.js';
 import { checkSubmissionToken, error, handler, json, readJson, submissionToken } from './_lib/http.js';
 import { getStore } from './_lib/store.js';
 
