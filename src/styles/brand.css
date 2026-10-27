@@ -29,7 +29,65 @@
   --radius-pill: 999px;
   --shadow: 0 6px 24px rgba(89, 48, 21, 0.12);
 
+  --on-primary: #ffffff; /* text on primary / accent buttons and badges */
+  --logo-color: #593015; /* logo artwork */
+  --danger-bg: #fbeceb;
+  --checker-a: #f1f1f1; /* transparency checkerboard behind the editor */
+  --checker-b: #ffffff;
+  color-scheme: light;
+
   --font-display: 'Lovelace', 'Kulachat Serif', 'Playfair Display', 'Chonburi', Georgia, serif;
   --font-heading: 'Garet', 'Anantason', 'Urbanist', 'Anuphan', system-ui, sans-serif;
   --font-body: 'Garet', 'Anantason', 'Urbanist', 'Anuphan', system-ui, sans-serif;
+}
+
+/*
+ * Dark theme: follows the device setting unless the viewer picked a theme
+ * with the ☀/☾ button (stored and applied as <html data-theme>).
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --brand-primary: #d8b680; /* light gold-tan: buttons, headings */
+    --brand-primary-dark: #e6c896;
+    --brand-secondary: #a9a776;
+    --brand-accent: #9c9a68; /* olive, lifted for dark backgrounds */
+    --brand-accent-dark: #b0ae7b;
+    --brand-highlight: #d4b47a;
+    --on-primary: #24170e;
+    --logo-color: #ede8d4; /* cream logo on dark */
+    --bg: #1b130d; /* deep brown */
+    --bg-soft: #2c2016;
+    --surface: #241a12;
+    --text: #f1ebdc;
+    --text-muted: #bcae9c;
+    --border: #4a3a2b;
+    --danger: #ff9b8c;
+    --danger-bg: #3d1d18;
+    --checker-a: #2f2419;
+    --checker-b: #3a2d20;
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+  }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --brand-primary: #d8b680; /* light gold-tan: buttons, headings */
+  --brand-primary-dark: #e6c896;
+  --brand-secondary: #a9a776;
+  --brand-accent: #9c9a68; /* olive, lifted for dark backgrounds */
+  --brand-accent-dark: #b0ae7b;
+  --brand-highlight: #d4b47a;
+  --on-primary: #24170e;
+  --logo-color: #ede8d4; /* cream logo on dark */
+  --bg: #1b130d; /* deep brown */
+  --bg-soft: #2c2016;
+  --surface: #241a12;
+  --text: #f1ebdc;
+  --text-muted: #bcae9c;
+  --border: #4a3a2b;
+  --danger: #ff9b8c;
+  --danger-bg: #3d1d18;
+  --checker-a: #2f2419;
+  --checker-b: #3a2d20;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
 }

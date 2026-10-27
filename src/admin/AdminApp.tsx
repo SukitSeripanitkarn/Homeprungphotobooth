@@ -2,9 +2,12 @@ import QRCode from 'qrcode';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { AdminSessionResponse, SubmissionMeta } from '../../api/_lib/classSession';
-import { BRAND } from '../brand';
 import { PRINT_DIAMETER_MM } from '../config';
 import { STRINGS, I18nContext } from '../i18n';
+import { BrandLogo } from '../components/BrandLogo';
+import { PrefsToggles } from '../components/PrefsToggles';
+import { usePrefs } from '../lib/prefs';
+import { useAdminText } from './adminI18n';
 import {
   ApiError,
   adminDeletePhoto,
@@ -37,12 +40,15 @@ import { StickerEditorModal } from './StickerEditorModal';
 import './admin.css';
 
 const POLL_MS = 4000;
-const i18n = { t: STRINGS.th, lang: 'th' as const, toggle: () => {} };
 
 export default function AdminApp() {
+  const { lang, toggleLang, theme, toggleTheme } = usePrefs();
+  const i18n = useMemo(
+    () => ({ t: STRINGS[lang], lang, toggle: toggleLang, theme, toggleTheme }),
+    [lang, toggleLang, theme, toggleTheme],
+  );
   const [auth, setAuth] = useState<'checking' | 'out' | 'in'>('checking');
   useEffect(() => {
-    document.title = 'แอดมิน · หอมปรุง Photobooth';
     adminStatus()
       .then((r) => setAuth(r.admin ? 'in' : 'out'))
       .catch(() => setAuth('out'));
@@ -50,24 +56,36 @@ export default function AdminApp() {
 
   return (
     <I18nContext.Provider value={i18n}>
-      <div className="admin">
-        <header className="admin__header">
-          <img src={BRAND.mark} alt="HOMPRUNG by BAIHOR" height={56} width={32} />
-          <h1>แอดมิน · หอมปรุง Photobooth</h1>
-          {auth === 'in' && (
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => adminLogout().finally(() => setAuth('out'))}>
-              ออกจากระบบ
-            </button>
-          )}
-        </header>
-        {auth === 'out' && <Login onDone={() => setAuth('in')} />}
-        {auth === 'in' && <Dashboard onLoggedOut={() => setAuth('out')} />}
-      </div>
+      <AdminShell auth={auth} setAuth={setAuth} />
     </I18nContext.Provider>
   );
 }
 
+function AdminShell({ auth, setAuth }: { auth: 'checking' | 'out' | 'in'; setAuth: (a: 'out' | 'in') => void }) {
+  const a = useAdminText();
+  useEffect(() => {
+    document.title = a.title;
+  }, [a]);
+  return (
+    <div className="admin">
+      <header className="admin__header">
+        <BrandLogo kind="mark" className="admin__mark" />
+        <h1>{a.title}</h1>
+        <PrefsToggles />
+        {auth === 'in' && (
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => adminLogout().finally(() => setAuth('out'))}>
+            {a.logout}
+          </button>
+        )}
+      </header>
+      {auth === 'out' && <Login onDone={() => setAuth('in')} />}
+      {auth === 'in' && <Dashboard onLoggedOut={() => setAuth('out')} />}
+    </div>
+  );
+}
+
 function Login({ onDone }: { onDone: () => void }) {
+  const a = useAdminText();
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,12 +101,12 @@ function Login({ onDone }: { onDone: () => void }) {
       const code = err instanceof ApiError ? err.code : undefined;
       setError(
         code === 'wrong_password'
-          ? 'รหัสผ่านไม่ถูกต้อง'
+          ? a.wrongPassword
           : code === 'locked'
-            ? 'ลองผิดหลายครั้งเกินไป กรุณารอ 15 นาที'
+            ? a.locked
             : code === 'not_configured'
               ? (err as ApiError).message
-              : 'เชื่อมต่อไม่ได้ ลองอีกครั้ง',
+              : a.cannotConnect,
       );
     } finally {
       setBusy(false);
@@ -97,9 +115,9 @@ function Login({ onDone }: { onDone: () => void }) {
 
   return (
     <form className="card login" onSubmit={submit}>
-      <h2>เข้าสู่ระบบแอดมิน</h2>
+      <h2>{a.loginTitle}</h2>
       <label>
-        รหัสผ่าน
+        {a.password}
         <input
           className="text-input"
           type="password"
@@ -112,7 +130,7 @@ function Login({ onDone }: { onDone: () => void }) {
       </label>
       {error && <p className="alert">{error}</p>}
       <button className="btn btn--primary" disabled={busy || !password}>
-        {busy ? 'กำลังตรวจสอบ…' : 'เข้าสู่ระบบ'}
+        {busy ? a.checking : a.login}
       </button>
     </form>
   );
@@ -125,6 +143,7 @@ interface PhotoCache {
 }
 
 function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
+  const a = useAdminText();
   const [data, setData] = useState<AdminSessionResponse | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [clockOffset, setClockOffset] = useState(0);
@@ -155,9 +174,9 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
       if (err instanceof ApiError && err.status === 401) return onLoggedOut();
       // Show what went wrong instead of loading forever (polling keeps retrying).
       const e = err as ApiError;
-      setLoadError(e.status ? `${e.message} (HTTP ${e.status})` : 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
+      setLoadError(e.status ? `${e.message} (HTTP ${e.status})` : a.serverUnreachable);
     }
-  }, [onLoggedOut]);
+  }, [onLoggedOut, a]);
 
   useEffect(() => {
     refresh();
@@ -219,7 +238,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
 
   // ---- actions
   const start = async () => {
-    if (session && !window.confirm('เริ่มรอบใหม่? รูปทั้งหมดของรอบปัจจุบันจะถูกลบ')) return;
+    if (session && !window.confirm(a.confirmRestart)) return;
     setBusy(true);
     try {
       const res = await adminStartSession(workshop);
@@ -230,7 +249,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
     }
   };
   const end = async () => {
-    if (!window.confirm('จบรอบนี้ตอนนี้? รูปทั้งหมดของรอบนี้จะถูกลบจากเซิร์ฟเวอร์ทันที')) return;
+    if (!window.confirm(a.confirmEnd)) return;
     setBusy(true);
     try {
       setData(await adminEndSession());
@@ -239,7 +258,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
     }
   };
   const removePhoto = async (s: SubmissionMeta) => {
-    if (!window.confirm(`ลบรูปของ "${s.name || 'ไม่ระบุชื่อ'}"?`)) return;
+    if (!window.confirm(a.confirmRemovePhoto(s.name || a.noName))) return;
     await adminDeletePhoto(s.id);
     refresh();
   };
@@ -262,7 +281,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
     await putExtra(stored);
   };
   const removeExtra = async (id: string) => {
-    if (!window.confirm('ลบสติกเกอร์นี้?')) return;
+    if (!window.confirm(a.confirmRemoveSticker)) return;
     await deleteExtra(id);
     setExtras((xs) => xs.filter((x) => x.id !== id));
   };
@@ -331,15 +350,15 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
   if (!data) {
     return loadError ? (
       <div className="card login">
-        <h2>โหลดข้อมูลรอบไม่สำเร็จ</h2>
+        <h2>{a.loadFailed}</h2>
         <p className="alert">{loadError}</p>
-        <p className="field-hint">ระบบจะลองใหม่ทุก 4 วินาที ถ้ายังไม่ได้ ส่งข้อความนี้ให้ผู้ดูแลระบบ</p>
+        <p className="field-hint">{a.loadFailedHint}</p>
         <button type="button" className="btn btn--primary" onClick={refresh}>
-          ลองอีกครั้ง
+          {a.retry}
         </button>
       </div>
     ) : (
-      <p className="muted">กำลังโหลด…</p>
+      <p className="muted">{a.loading}</p>
     );
   }
 
@@ -348,30 +367,30 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
       <div className="admin__col">
         {/* ---------------- class */}
         <section className="card">
-          <h2>รอบเวิร์กช็อป</h2>
+          <h2>{a.classTitle}</h2>
           {session ? (
             <div className="class-live">
               {qr && (
-                <button type="button" className="class-live__qr" onClick={() => setShowQr(true)} title="แสดง QR เต็มจอ">
+                <button type="button" className="class-live__qr" onClick={() => setShowQr(true)} title={a.showQrTitle}>
                   <img src={qr} alt={`QR ${studentUrl}`} width={200} height={200} />
                 </button>
               )}
               <div className="class-live__info">
                 {session.workshop && <p className="class-live__name">{session.workshop}</p>}
-                <p className={`countdown${left <= 10 ? ' countdown--low' : ''}`}>⏱ เหลือเวลา {left} นาที</p>
+                <p className={`countdown${left <= 10 ? ' countdown--low' : ''}`}>{a.timeLeft(left)}</p>
                 <p>
-                  รหัสรอบ <strong className="class-live__code">{session.code}</strong>
+                  {a.classCode} <strong className="class-live__code">{session.code}</strong>
                 </p>
                 <p className="field-hint">
-                  ลิงก์สำหรับผู้เรียน: <a href={studentUrl} target="_blank" rel="noreferrer">{studentUrl}</a>
+                  {a.studentLink} <a href={studentUrl} target="_blank" rel="noreferrer">{studentUrl}</a>
                 </p>
-                {left <= 10 && <p className="alert">ใกล้หมดเวลา: ดาวน์โหลดไฟล์หรือพิมพ์ให้เสร็จก่อน รูปจะถูกลบอัตโนมัติ</p>}
+                {left <= 10 && <p className="alert">{a.endingSoon}</p>}
                 <div className="btn-row btn-row--left">
                   <button type="button" className="btn btn--primary btn--sm" onClick={() => setShowQr(true)}>
-                    แสดง QR เต็มจอ
+                    {a.showQr}
                   </button>
                   <button type="button" className="btn btn--ghost btn--sm" onClick={end} disabled={busy}>
-                    จบรอบและลบรูป
+                    {a.endClass}
                   </button>
                 </div>
               </div>
@@ -379,14 +398,14 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
           ) : (
             <div className="admin-form">
               <p className="muted">
-                กดเริ่มรอบเพื่อเปิดรับรูปจากผู้เรียน รอบหนึ่งมีเวลา 1 ชั่วโมง หลังจากนั้นรูปทั้งหมดจะถูกลบอัตโนมัติ
+                {a.startHint}
               </p>
               <label>
-                ชื่อเวิร์กช็อป (ไม่บังคับ)
+                {a.workshopName}
                 <input className="text-input" value={workshop} maxLength={60} onChange={(e) => setWorkshop(e.target.value)} />
               </label>
               <button type="button" className="btn btn--primary" onClick={start} disabled={busy}>
-                เริ่มรอบใหม่ (1 ชั่วโมง)
+                {a.startClass}
               </button>
             </div>
           )}
@@ -396,9 +415,9 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
         {session && (
           <section className="card">
             <div className="card__head">
-              <h2>รูปจากผู้เรียน ({submissions.length})</h2>
+              <h2>{a.photosTitle(submissions.length)}</h2>
               <label className="inline-field">
-                จำนวนดวงต่อคน
+                {a.copiesPerPerson}
                 <input
                   className="text-input text-input--num"
                   type="number"
@@ -410,14 +429,14 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
               </label>
             </div>
             {submissions.length === 0 ? (
-              <p className="muted">ยังไม่มีรูป ให้ผู้เรียนสแกน QR โค้ดด้านบน หน้านี้อัปเดตเองทุก 4 วินาที</p>
+              <p className="muted">{a.noPhotos}</p>
             ) : (
               <ul className="photo-grid">
                 {submissions.map((s, i) => (
                   <li key={s.id} className="photo-grid__item">
                     {photos[s.id] ? <img src={photos[s.id].url} alt="" /> : <span className="photo-grid__placeholder" />}
                     <span className="photo-grid__name">
-                      {i + 1}. {s.name || 'ไม่ระบุชื่อ'}
+                      {i + 1}. {s.name || a.noName}
                     </span>
                     <label className="inline-field">
                       ×
@@ -428,10 +447,10 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
                         max={50}
                         value={copiesOf(s.id)}
                         onChange={(e) => setCopiesFor(s.id, Math.max(0, Math.min(50, Math.round(Number(e.target.value)) || 0)))}
-                        aria-label="จำนวนดวง"
+                        aria-label={a.copies}
                       />
                     </label>
-                    <button type="button" className="photo-grid__remove" onClick={() => removePhoto(s)} aria-label="ลบรูป">
+                    <button type="button" className="photo-grid__remove" onClick={() => removePhoto(s)} aria-label={a.removePhoto}>
                       ✕
                     </button>
                   </li>
@@ -444,12 +463,12 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
         {/* ---------------- extras */}
         <section className="card">
           <div className="card__head">
-            <h2>สติกเกอร์เพิ่มเติม (พิมพ์จำนวนมาก)</h2>
+            <h2>{a.extrasTitle}</h2>
             <button type="button" className="btn btn--primary btn--sm" onClick={() => setShowEditor(true)}>
-              + เพิ่มสติกเกอร์
+              {a.addSticker}
             </button>
           </div>
-          <p className="field-hint">เก็บไว้ในเบราว์เซอร์นี้เท่านั้น ไม่ถูกลบเมื่อจบรอบ ลบเองได้เมื่อไม่ใช้แล้ว</p>
+          <p className="field-hint">{a.extrasHint}</p>
           {extras.length > 0 && (
             <ul className="extra-list">
               {extras.map((x) => (
@@ -457,7 +476,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
                   <img src={x.url} alt="" width={56} height={56} />
                   <span className="extra-list__label">{x.label}</span>
                   <label className="inline-field">
-                    ขนาด
+                    {a.size}
                     <input
                       className="text-input text-input--num"
                       type="number"
@@ -466,7 +485,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
                       value={x.diameterMm}
                       onChange={(e) => updateExtra(x.id, { diameterMm: Math.max(10, Math.min(250, Number(e.target.value) || PRINT_DIAMETER_MM)) })}
                     />
-                    มม.
+                    {a.mm}
                   </label>
                   <label className="inline-field">
                     ×
@@ -478,9 +497,9 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
                       value={x.count}
                       onChange={(e) => updateExtra(x.id, { count: Math.max(0, Math.min(2000, Math.round(Number(e.target.value)) || 0)) })}
                     />
-                    ดวง
+                    {a.pcs}
                   </label>
-                  <button type="button" className="photo-grid__remove" onClick={() => removeExtra(x.id)} aria-label="ลบ">
+                  <button type="button" className="photo-grid__remove" onClick={() => removeExtra(x.id)} aria-label={a.remove}>
                     ✕
                   </button>
                 </li>
@@ -493,48 +512,46 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
       {/* ---------------- sheets */}
       <div className="admin__col">
         <section className="card">
-          <h2>แผ่นสติกเกอร์</h2>
+          <h2>{a.sheetsTitle}</h2>
           <div className="settings-grid">
             <label>
-              กระดาษ
+              {a.paper}
               <select className="text-input" value={settings.paper} onChange={(e) => set('paper', e.target.value as PaperId)}>
-                <option value="A3">A3 (297 × 420 มม.)</option>
-                <option value="A4">A4 (210 × 297 มม.)</option>
+                <option value="A3">{a.paperA3}</option>
+                <option value="A4">{a.paperA4}</option>
               </select>
             </label>
-            <NumberField label="ขนาดสติกเกอร์ผู้เรียน (มม.)" value={settings.classDiameterMm} min={10} max={250} onChange={(v) => set('classDiameterMm', v)} />
-            <NumberField label="ขอบกระดาษ (มม.)" value={settings.marginMm} min={0} max={40} step={0.5} onChange={(v) => set('marginMm', v)} />
-            <NumberField label="ระยะห่างระหว่างดวง (มม.)" value={settings.gapMm} min={0} max={20} step={0.5} onChange={(v) => set('gapMm', v)} />
-            <NumberField label="เผื่อตัด / bleed (มม.)" value={settings.bleedMm} min={0} max={3} step={0.5} onChange={(v) => set('bleedMm', v)} />
+            <NumberField label={a.classSize} value={settings.classDiameterMm} min={10} max={250} onChange={(v) => set('classDiameterMm', v)} />
+            <NumberField label={a.margin} value={settings.marginMm} min={0} max={40} step={0.5} onChange={(v) => set('marginMm', v)} />
+            <NumberField label={a.gap} value={settings.gapMm} min={0} max={20} step={0.5} onChange={(v) => set('gapMm', v)} />
+            <NumberField label={a.bleed} value={settings.bleedMm} min={0} max={3} step={0.5} onChange={(v) => set('bleedMm', v)} />
             <label className="checkbox">
               <input type="checkbox" checked={settings.cutGuide} onChange={(e) => set('cutGuide', e.target.checked)} />
-              พิมพ์เส้นตัดสีเทา (สำหรับตัดด้วยกรรไกร)
+              {a.cutGuide}
             </label>
           </div>
-          {bleedWarning && <p className="alert">ระยะห่างควรมากกว่า 2 × bleed ไม่เช่นนั้นภาพของดวงข้างเคียงจะซ้อนกัน</p>}
-          {packed.tooBig.length > 0 && <p className="alert">มีสติกเกอร์ที่ใหญ่เกินกระดาษ จึงไม่ได้ใส่ในแผ่น</p>}
+          {bleedWarning && <p className="alert">{a.bleedWarning}</p>}
+          {packed.tooBig.length > 0 && <p className="alert">{a.tooBig}</p>}
 
           <p className="sheet-summary">
-            {totalStickers} ดวง · {packed.sheets.length} แผ่น {settings.paper}
+            {a.summary(totalStickers, packed.sheets.length, settings.paper)}
           </p>
           <div className="btn-row btn-row--left">
             <button type="button" className="btn btn--accent" onClick={printAll} disabled={!totalStickers || missingImages}>
-              🖨 พิมพ์ทุกแผ่น
+              {a.printAll}
             </button>
             <button type="button" className="btn btn--ghost" onClick={downloadAll} disabled={!totalStickers || missingImages || !!exporting}>
-              ⬇ PDF ทุกแผ่น (สำหรับเครื่องตัด)
+              {a.pdfAll}
             </button>
           </div>
           <details className="howto">
-            <summary>วิธีพิมพ์และตัดด้วย Epson L18050 + MicroCut 30Q</summary>
+            <summary>{a.howtoTitle}</summary>
             <ol>
-              <li>กด "PDF ทุกแผ่น" ไฟล์ PDF มีภาพสติกเกอร์ และเส้นตัดวงกลมสีชมพูชื่อ <code>CutContour</code></li>
-              <li>เปิด PDF ในโปรแกรมของเครื่องตัด MicroCut ให้โปรแกรมเพิ่มจุดมาร์ก (registration marks) แล้วสั่งพิมพ์ลงสติกเกอร์ A3 จากโปรแกรมนั้น</li>
-              <li>ใส่แผ่นที่พิมพ์แล้วเข้าเครื่องตัด ให้เครื่องอ่านจุดมาร์ก แล้วตัดตามเส้น CutContour</li>
-              <li>ถ้าโปรแกรมเปิด PDF ไม่ได้ ใช้ไฟล์ DXF (เส้นตัดอย่างเดียว ตำแหน่งตรงกับ PDF) วางทับภาพ</li>
-              <li>ถ้าพิมพ์จากหน้านี้โดยตรง (ปุ่ม "พิมพ์ทุกแผ่น") ให้ตั้ง Scale 100% และขนาดกระดาษให้ตรง เหมาะกับการตัดด้วยมือ</li>
+              {a.howto.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
             </ol>
-            <p className="field-hint">ขอบกระดาษ 12 มม. เผื่อที่ให้จุดมาร์กของเครื่องตัด ถ้าโปรแกรมต้องการพื้นที่มากกว่านี้ ให้เพิ่มค่า "ขอบกระดาษ"</p>
+            <p className="field-hint">{a.howtoMargin}</p>
           </details>
 
           <div className="sheet-previews">
@@ -542,10 +559,10 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
               <figure key={i} className="sheet-preview">
                 <SheetSvg sheet={sheet} paper={paper} images={images} bleedMm={settings.bleedMm} cutGuide className="sheet-preview__svg" />
                 <figcaption>
-                  แผ่น {i + 1} · {sheet.length} ดวง
+                  {a.sheetCaption(i + 1, sheet.length)}
                   <span className="sheet-preview__links">
                     <button type="button" className="btn btn--link btn--sm" onClick={() => download(i, 'pdf')} disabled={!!exporting || missingImages}>
-                      {exporting === `${i}` ? 'กำลังสร้าง…' : 'PDF'}
+                      {exporting === `${i}` ? a.generating : 'PDF'}
                     </button>
                     <button type="button" className="btn btn--link btn--sm" onClick={() => download(i, 'dxf')}>
                       DXF
@@ -562,9 +579,9 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
       {showQr && qr && session && (
         <div className="qr-full" role="dialog" aria-modal="true" onClick={() => setShowQr(false)}>
           <img src={qr} alt="" />
-          <p>สแกนเพื่อส่งรูปทำสติกเกอร์</p>
+          <p>{a.scanToSend}</p>
           {session.workshop && <p className="qr-full__sub">{session.workshop}</p>}
-          <p className="qr-full__sub">แตะเพื่อปิด</p>
+          <p className="qr-full__sub">{a.tapToClose}</p>
         </div>
       )}
       <PrintSheets sheets={packed.sheets} paper={paper} images={images} bleedMm={settings.bleedMm} cutGuide={settings.cutGuide} />

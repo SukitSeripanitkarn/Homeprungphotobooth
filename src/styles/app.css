@@ -33,6 +33,10 @@ img {
   max-width: 100%;
 }
 
+a {
+  color: var(--brand-primary);
+}
+
 .app {
   min-height: 100dvh;
   max-width: 560px;
@@ -47,6 +51,7 @@ img {
 /* ---------- header ---------- */
 .header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
@@ -61,11 +66,34 @@ img {
 }
 .header__mark {
   height: 56px;
-  width: auto;
 }
 .header__wordmark {
   height: 26px;
-  width: auto;
+}
+.header .header__workshop {
+  flex-basis: 100%;
+  max-width: none;
+  text-align: center;
+}
+/* Logo artwork painted in the theme colour through a mask (see BrandLogo). */
+.brand-logo {
+  display: inline-block;
+  flex: none;
+  background-color: var(--logo-color);
+  -webkit-mask: var(--logo-src) center / contain no-repeat;
+  mask: var(--logo-src) center / contain no-repeat;
+}
+.brand-logo--mark {
+  aspect-ratio: 444 / 785;
+}
+.brand-logo--wordmark {
+  aspect-ratio: 480 / 106;
+}
+.brand-logo--logo {
+  aspect-ratio: 480 / 916;
+}
+.info__mark {
+  height: 80px;
 }
 .header__right {
   display: flex;
@@ -183,14 +211,14 @@ img {
 }
 .btn--primary {
   background: var(--brand-primary);
-  color: #fff;
+  color: var(--on-primary);
 }
 .btn--primary:hover:not(:disabled) {
   background: var(--brand-primary-dark);
 }
 .btn--accent {
   background: var(--brand-accent);
-  color: #fff;
+  color: var(--on-primary);
 }
 .btn--accent:hover:not(:disabled) {
   background: var(--brand-accent-dark);
@@ -239,7 +267,7 @@ img {
   margin: 0;
   padding: 10px 14px;
   border-radius: var(--radius-sm);
-  background: #fbeceb;
+  background: var(--danger-bg);
   color: var(--danger);
 }
 .privacy {
@@ -260,7 +288,7 @@ img {
   color: var(--brand-primary);
 }
 .countdown--low {
-  background: #fbeceb;
+  background: var(--danger-bg);
   color: var(--danger);
 }
 .stage {
@@ -269,7 +297,7 @@ img {
   border-radius: 50%;
   box-shadow: var(--shadow), 0 0 0 1px var(--border);
   background:
-    repeating-conic-gradient(#f1f1f1 0 25%, #fff 0 50%) 50% / 20px 20px;
+    repeating-conic-gradient(var(--checker-a) 0 25%, var(--checker-b) 0 50%) 50% / 20px 20px;
 }
 .stage__canvas {
   display: block;
@@ -366,7 +394,7 @@ img {
   padding: 0 6px;
   border-radius: var(--radius-pill);
   background: var(--brand-primary);
-  color: #fff;
+  color: var(--on-primary);
   font-family: var(--font-heading);
   font-size: 11px;
   font-weight: 600;

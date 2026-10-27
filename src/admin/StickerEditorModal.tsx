@@ -9,6 +9,7 @@ import { renderExportCanvas } from '../lib/exportPng';
 import { DEFAULT_EDIT, type EditState, type FrameEntry, type Photo } from '../lib/types';
 import { NO_FRAME, useFrameState } from '../lib/useFrameState';
 import type { ExtraSticker } from './adminStore';
+import { useAdminText } from './adminI18n';
 
 interface Props {
   frames: FrameEntry[] | null;
@@ -18,6 +19,7 @@ interface Props {
 
 /** Upload an image, place it (optionally in a frame) and add N copies to the sheets. */
 export function StickerEditorModal({ frames, onAdd, onClose }: Props) {
+  const a = useAdminText();
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [fileName, setFileName] = useState('');
   const [edit, setEdit] = useState<EditState>(DEFAULT_EDIT);
@@ -39,7 +41,7 @@ export function StickerEditorModal({ frames, onAdd, onClose }: Props) {
       setFileName(file.name.replace(/\.[^.]+$/, ''));
       setEdit(DEFAULT_EDIT);
     } catch {
-      setError('เปิดไฟล์รูปนี้ไม่ได้ ลองไฟล์ JPG หรือ PNG');
+      setError(a.imageError);
     } finally {
       setBusy(false);
     }
@@ -55,28 +57,28 @@ export function StickerEditorModal({ frames, onAdd, onClose }: Props) {
       const blob = await new Promise<Blob>((resolve, reject) =>
         canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png'),
       );
-      await onAdd({ label: label.trim() || fileName || 'สติกเกอร์', blob, diameterMm: diameter, count });
+      await onAdd({ label: label.trim() || fileName || a.defaultLabel, blob, diameterMm: diameter, count });
       onClose();
     } catch {
-      setError('บันทึกไม่สำเร็จ ลองอีกครั้ง');
+      setError(a.saveError);
       setBusy(false);
     }
   };
 
   return (
-    <div className="modal" role="dialog" aria-modal="true" aria-label="เพิ่มสติกเกอร์">
+    <div className="modal" role="dialog" aria-modal="true" aria-label={a.editorTitle}>
       <div className="modal__panel">
         <div className="modal__head">
-          <h2>เพิ่มสติกเกอร์สำหรับพิมพ์จำนวนมาก</h2>
+          <h2>{a.editorTitle}</h2>
           <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>
-            ✕ ปิด
+            {a.close}
           </button>
         </div>
         {!photo ? (
           <div className="modal__empty">
-            <p className="muted">เลือกรูปหรือโลโก้ แล้วจัดตำแหน่งในวงกลม จะใส่กรอบหอมปรุงด้วยหรือไม่ก็ได้</p>
+            <p className="muted">{a.editorHint}</p>
             <PhotoInput className="btn btn--primary btn--xl" onFile={pick} disabled={busy}>
-              {busy ? 'กำลังเปิดรูป…' : 'เลือกไฟล์รูป'}
+              {busy ? a.openingImage : a.chooseImage}
             </PhotoInput>
           </div>
         ) : (
@@ -90,7 +92,7 @@ export function StickerEditorModal({ frames, onAdd, onClose }: Props) {
             onReset={() => setEdit(DEFAULT_EDIT)}
             changePhoto={
               <PhotoInput className="btn btn--ghost btn--sm" onFile={pick} disabled={busy}>
-                🖼 เปลี่ยนรูป
+                {a.changeImage}
               </PhotoInput>
             }
             framePicker={
@@ -106,12 +108,12 @@ export function StickerEditorModal({ frames, onAdd, onClose }: Props) {
             actions={
               <section className="admin-form">
                 <label>
-                  ชื่อเรียก
+                  {a.stickerLabel}
                   <input className="text-input" value={label} placeholder={fileName} onChange={(e) => setLabel(e.target.value)} />
                 </label>
                 <div className="admin-form__row">
                   <label>
-                    ขนาด (มม.)
+                    {a.sizeMm}
                     <input
                       className="text-input"
                       type="number"
@@ -123,7 +125,7 @@ export function StickerEditorModal({ frames, onAdd, onClose }: Props) {
                     />
                   </label>
                   <label>
-                    จำนวนดวง
+                    {a.copies}
                     <input
                       className="text-input"
                       type="number"
@@ -137,7 +139,7 @@ export function StickerEditorModal({ frames, onAdd, onClose }: Props) {
                 </div>
                 {error && <p className="alert">{error}</p>}
                 <button type="button" className="btn btn--primary btn--xl" onClick={add} disabled={busy || !frameReady}>
-                  {busy ? 'กำลังบันทึก…' : `เพิ่ม ${count} ดวงลงแผ่นสติกเกอร์`}
+                  {busy ? a.saving : a.addCount(count)}
                 </button>
               </section>
             }

@@ -43,6 +43,14 @@ npm run build                     # typecheck + production build into dist/
 
 Only one class runs at a time; starting a new one ends the previous one.
 
+### Language and light/dark mode
+- **Language:** both the student app and the admin page have a **TH/EN** switch. It's shared, so one choice applies to both. Strings live in `src/i18n.ts` (students) and `src/admin/adminI18n.ts` (admin).
+- **Theme:** the **☀/☾** button switches light and dark. Until someone presses it, the app follows the device's setting.
+  - Both choices are remembered in the browser (`src/lib/prefs.ts`). A small script in `index.html` applies the saved theme before the page draws, so there's no flash of the wrong colours.
+  - Dark colours are in `src/styles/brand.css`: deep brown backgrounds, cream text, and light-gold buttons with dark lettering.
+  - The logo is drawn through a CSS mask (`BrandLogo`), so it turns cream in dark mode.
+  - Sheet previews, printing and the full-screen QR code always stay white.
+
 ### Sheet packing (`src/lib/pack.ts`)
 - **How each sheet is filled:** stickers go in rows, and each one drops to the highest spot where it doesn't touch anything. Rows can be staggered, so equal circles nest in a honeycomb.
 - **Four layouts per sheet:** honeycomb or straight rows, running across or down the page. The fullest layout wins.

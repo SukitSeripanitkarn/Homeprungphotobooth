@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SESSION_CHECK_INTERVAL_MS } from './config';
-import { STRINGS, I18nContext, type Lang } from './i18n';
+import { STRINGS, I18nContext } from './i18n';
 import { Countdown } from './components/Countdown';
 import { Editor } from './components/Editor';
 import { FramePicker } from './components/FramePicker';
@@ -18,6 +18,7 @@ import { loadFrameManifest } from './lib/frames';
 import { clearSession, isExpired, loadSession, savePhoto, saveState, type StateRecord } from './lib/session';
 import { DEFAULT_EDIT, type EditState, type FrameEntry, type Photo } from './lib/types';
 import { useFrameState } from './lib/useFrameState';
+import { usePrefs } from './lib/prefs';
 
 type Screen = 'boot' | 'noClass' | 'closed' | 'offline' | 'landing' | 'editor' | 'sent' | 'expired';
 
@@ -29,45 +30,16 @@ interface ClassInfo {
   clockOffset: number;
 }
 
-const LANG_KEY = 'homprung-photobooth:lang';
-
 /** Class code from the QR link: /?s=ABC123 */
 function readClassCode(): string | null {
   const s = new URLSearchParams(window.location.search).get('s')?.trim().toUpperCase();
   return s && /^[A-Z0-9]{4,12}$/.test(s) ? s : null;
 }
 
-function readLang(): Lang {
-  try {
-    return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'th';
-  } catch {
-    return 'th';
-  }
-}
-
 export default function App() {
-  const [lang, setLang] = useState<Lang>(readLang);
+  const { lang, toggleLang, theme, toggleTheme } = usePrefs();
   const t = STRINGS[lang];
-  const i18n = useMemo(
-    () => ({
-      t,
-      lang,
-      toggle: () =>
-        setLang((l) => {
-          const next = l === 'th' ? 'en' : 'th';
-          try {
-            localStorage.setItem(LANG_KEY, next);
-          } catch {
-            /* ignore */
-          }
-          return next;
-        }),
-    }),
-    [t, lang],
-  );
-  useEffect(() => {
-    document.documentElement.lang = lang;
-  }, [lang]);
+  const i18n = useMemo(() => ({ t, lang, toggle: toggleLang, theme, toggleTheme }), [t, lang, toggleLang, theme, toggleTheme]);
 
   const code = useMemo(readClassCode, []);
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);

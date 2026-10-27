@@ -52,6 +52,9 @@ const th = {
   expiredText: 'เพื่อความเป็นส่วนตัว รูปและงานที่แก้ไขถูกลบออกแล้ว',
   exportError: 'สร้างไฟล์ไม่สำเร็จ ลองอีกครั้ง',
   langToggle: 'EN',
+  langToggleLabel: 'Switch to English',
+  toDark: 'เปลี่ยนเป็นโหมดมืด',
+  toLight: 'เปลี่ยนเป็นโหมดสว่าง',
 };
 
 type Strings = typeof th;
@@ -106,14 +109,28 @@ const en: Strings = {
   expiredText: 'For your privacy, the photo and edits have been deleted.',
   exportError: 'Could not create the file. Please try again.',
   langToggle: 'ไทย',
+  langToggleLabel: 'เปลี่ยนเป็นภาษาไทย',
+  toDark: 'Switch to dark mode',
+  toLight: 'Switch to light mode',
 };
 
 export const STRINGS: Record<Lang, Strings> = { th, en };
 
-export const I18nContext = createContext<{ t: Strings; lang: Lang; toggle: () => void }>({
+/** Display preferences for components: strings, language and theme. */
+export interface I18nValue {
+  t: Strings;
+  lang: Lang;
+  toggle: () => void;
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+}
+
+export const I18nContext = createContext<I18nValue>({
   t: th,
   lang: 'th',
   toggle: () => {},
+  theme: 'light',
+  toggleTheme: () => {},
 });
 
 export const useI18n = () => useContext(I18nContext);
