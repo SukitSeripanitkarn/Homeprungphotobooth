@@ -1,18 +1,19 @@
-import { SESSION_TTL_MINUTES } from '../config';
 import type { EditState } from './types';
 
 /**
- * Local-only session storage. Everything lives in this browser's IndexedDB
- * and is wiped once SESSION_TTL_MINUTES have passed since the photo was picked.
- * Nothing is ever sent over the network.
+ * Work in progress on the student's phone (photo + edits), kept in this
+ * browser's IndexedDB so a refresh doesn't lose it. It belongs to one class
+ * (its code) and is wiped when that class ends, at most 1 hour after the
+ * admin started it.
  */
-
-export const SESSION_TTL_MS = SESSION_TTL_MINUTES * 60_000;
 
 export type SavedScreen = 'editor' | 'done';
 
 export interface PhotoRecord {
-  createdAt: number;
+  /** Class code from the QR link. */
+  code: string;
+  /** Class end time (server clock). */
+  expiresAt: number;
   blob: Blob;
 }
 
@@ -21,12 +22,16 @@ export interface StateRecord {
   frameId: string | null;
   /** Optional text the customer typed for the frame band. */
   frameText?: string;
+  /** Name sent to the admin with the sticker. */
+  name?: string;
+  /** Lets this phone replace its earlier submission. */
+  submission?: { id: string; token: string };
   screen: SavedScreen;
 }
 
 const DB_NAME = 'homprung-photobooth';
 const STORE = 'session';
-const CREATED_AT_KEY = 'homprung-photobooth:createdAt';
+const CLASS_KEY = 'homprung-photobooth:class';
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -54,18 +59,18 @@ async function tx<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => ID
   });
 }
 
-export function isExpired(createdAt: number, now = Date.now()) {
-  return now - createdAt > SESSION_TTL_MS;
+export function isExpired(expiresAt: number, now = Date.now()) {
+  return now >= expiresAt;
 }
 
-export function minutesLeft(createdAt: number, now = Date.now()) {
-  return Math.max(0, Math.ceil((createdAt + SESSION_TTL_MS - now) / 60_000));
+export function minutesLeft(expiresAt: number, now = Date.now()) {
+  return Math.max(0, Math.ceil((expiresAt - now) / 60_000));
 }
 
-function readCreatedAtFallback(): number | null {
+function readClassFallback(): { code: string; expiresAt: number } | null {
   try {
-    const v = sessionStorage.getItem(CREATED_AT_KEY);
-    return v ? Number(v) : null;
+    const v = sessionStorage.getItem(CLASS_KEY);
+    return v ? JSON.parse(v) : null;
   } catch {
     return null;
   }
@@ -73,7 +78,7 @@ function readCreatedAtFallback(): number | null {
 
 export async function savePhoto(record: PhotoRecord) {
   try {
-    sessionStorage.setItem(CREATED_AT_KEY, String(record.createdAt));
+    sessionStorage.setItem(CLASS_KEY, JSON.stringify({ code: record.code, expiresAt: record.expiresAt }));
   } catch {
     /* storage unavailable (private mode) – memory only */
   }
@@ -97,8 +102,11 @@ export type LoadResult =
   | { kind: 'expired' }
   | { kind: 'active'; photo: PhotoRecord; state: StateRecord | null };
 
-/** Loads the saved session, wiping it (and reporting 'expired') if it is too old. */
-export async function loadSession(): Promise<LoadResult> {
+/**
+ * Loads saved work for class `code`. Work from another class is discarded;
+ * work from this class is wiped (and reported 'expired') once it has ended.
+ */
+export async function loadSession(code: string, now = Date.now()): Promise<LoadResult> {
   let photo: PhotoRecord | undefined;
   let state: StateRecord | undefined;
   try {
@@ -107,10 +115,10 @@ export async function loadSession(): Promise<LoadResult> {
   } catch {
     /* ignore */
   }
-  const createdAt = photo?.createdAt ?? readCreatedAtFallback();
-  if (createdAt != null && isExpired(createdAt)) {
+  const saved = photo ?? readClassFallback();
+  if (saved && (saved.code !== code || isExpired(saved.expiresAt, now))) {
     await clearSession();
-    return { kind: 'expired' };
+    return saved.code === code ? { kind: 'expired' } : { kind: 'none' };
   }
   if (!photo) return { kind: 'none' };
   return { kind: 'active', photo, state: state ?? null };
@@ -118,7 +126,7 @@ export async function loadSession(): Promise<LoadResult> {
 
 export async function clearSession() {
   try {
-    sessionStorage.removeItem(CREATED_AT_KEY);
+    sessionStorage.removeItem(CLASS_KEY);
   } catch {
     /* ignore */
   }

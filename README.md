@@ -1,62 +1,96 @@
 # Homprung Photobooth (หอมปรุง Photobooth)
 
-A mobile-first photobooth for Baihor / Homprung workshops that runs entirely in the browser. Customers scan a QR code, pick or take a photo, and place it inside a round brand frame. Then they **download or print it themselves** as a **35 mm circle**.
+A photobooth for Baihor / Homprung workshops. Students scan the class QR code, pick or take a photo, and place it in a round brand frame on their phone. Then they **send it to the admin**. The admin collects the whole class, adds any batch stickers, and prints everything on **A3 or A4 sticker sheets** packed as tightly as possible. Default sticker size: **35 mm**.
 
-- **No backend, no database, no cloud storage, no accounts, no analytics.** Photos never leave the device.
-- Work is saved in the customer's own browser (IndexedDB) and **wiped automatically after 60 minutes**.
-- The app is a static Vite + React + TypeScript build that deploys to Vercel as-is.
+- **Students** need no account. The QR link carries the class code.
+- **The admin page** (`/admin`) is protected by a password.
+- **A class lasts 1 hour** from when the admin starts it. After that, every photo is deleted from the server automatically.
+- **Hosting:** Vite + React + TypeScript on Vercel, with a few Vercel Functions in `api/` and Upstash Redis for the photos of the running class.
 
-Target URL: `https://homeprungphotobooth.vercel.app`
+Target URL: `https://homeprungphotobooth.vercel.app` (students) and `https://homeprungphotobooth.vercel.app/admin` (admin).
 
 ---
 
-## Quick start
+## Set up (one time, in Vercel)
+
+1. **Storage:** in the Vercel project, open **Storage → Create Database → Upstash for Redis** (free plan), and connect it to this project. This adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` automatically.
+2. **Admin password:** open **Settings → Environment Variables**, add `ADMIN_PASSWORD` with a long password, and tick Production and Preview.
+3. **Redeploy** (Deployments → ⋯ → Redeploy) so the functions pick up the new settings.
+
+Without these, the admin page shows which setting is missing.
+
+## Quick start (local)
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
-npm run build      # typecheck + production build into dist/
-npm run preview    # serve dist/ locally
+ADMIN_PASSWORD=test npm run dev   # http://localhost:5173 and /admin
+npm run build                     # typecheck + production build into dist/
 ```
 
-To test on a phone on the same Wi-Fi, run `npm run dev -- --host` and open the LAN URL it prints.
+`npm run dev` also serves the `api/` functions. Without Upstash variables it keeps classes in memory, which is fine for testing. To test on a phone on the same Wi-Fi, run `npm run dev -- --host` and open the LAN URL it prints.
 
-## How it works
+## How a class works
 
-| Step | Screen | Notes |
+| Who | Step |
+| --- | --- |
+| Admin | Log in at `/admin` and press **เริ่มรอบใหม่ (1 ชั่วโมง)**, optionally with a workshop name. A QR code appears; **แสดง QR เต็มจอ** shows it full-screen for a projector. |
+| Student | Scan the QR (`/?s=CODE`), choose a photo, adjust it, pick a frame, add optional frame text and their name, then tap **ส่งให้เจ้าหน้าที่พิมพ์**. |
+| Student | **แก้ไขแล้วส่งใหม่** replaces their photo (no duplicates). **ส่งอีกรูป (คนถัดไป)** sends a new photo from the same phone, for families sharing a phone. |
+| Admin | Photos appear within ~4 s with names. Set copies per person (default 1) or per photo, and remove mistakes with ✕. |
+| Admin | Add batch stickers (**+ เพิ่มสติกเกอร์**): upload any image, position it with or without a Homprung frame, and choose its size and copies (e.g. 40). These are stored only in the admin's browser and are kept between classes. |
+| Admin | Pick **A3 or A4**, check the sheet preview, then print or download the cutter files (below). |
+| Everyone | When the hour is up (or the admin presses **จบรอบและลบรูป**), the server deletes the class and its photos. Students' phones wipe their local copy and show "หมดเวลา". |
+
+Only one class runs at a time; starting a new one ends the previous one.
+
+### Sheet packing (`src/lib/pack.ts`)
+- **How each sheet is filled:** stickers go in rows, and each one drops to the highest spot where it doesn't touch anything. Rows can be staggered, so equal circles nest in a honeycomb.
+- **Four layouts per sheet:** honeycomb or straight rows, running across or down the page. The fullest layout wins.
+- **Mixed sizes:** bigger stickers go first, and smaller ones search the whole sheet for gaps.
+- **Extra sheets** are added until every sticker is placed. Stickers bigger than the paper are reported, not dropped silently.
+- **Settings:** margin, gap and bleed are adjustable on the admin page.
+
+| Paper, 35 mm stickers, 5 mm margin, 2 mm gap | Simple grid | This packing |
 | --- | --- | --- |
-| 1 | **Landing** | Logo, one line of copy, and a big **เลือกรูป / ถ่ายรูป** button (`<input type="file" accept="image/*">`, where the OS offers camera and library). There is also a **เปิดกล้องถ่ายรูป** shortcut (`capture`). |
-| 2 | **Editor** | Circular canvas preview with the frame on top. Drag to move. Pinch, mouse wheel or the slider zooms around the fingers or cursor. Also: rotate 90°, reset, change photo, a horizontal frame picker and a "เหลือเวลา N นาที" countdown. |
-| 3 | **Done** | Thank-you message, preview of the final circle, download or print again, back to editor, start over. |
-| – | **Expired** | "หมดเวลา 1 ชั่วโมง กรุณาเริ่มใหม่" with a Start over button. |
+| A4 | 35 | **42** |
+| A3 | 77 | **84** |
 
-Adding `?workshop=NAME` to the URL shows a small label in the header. It is display only and never stored.
-Thai is the default language, and the header has an **EN** toggle. All strings live in `src/i18n.ts`.
+### Printing and cutting (Epson L18050 + MicroCut 30Q)
+Defaults: **A3**, 12 mm margin (room for the cutter's registration marks), 3 mm gap, and 1 mm bleed (each image prints 1 mm larger than its cut line, so a slightly off cut shows no white edge).
+
+- **PDF ทุกแผ่น / PDF:** one PDF per sheet.
+  - **Print layer:** the sheet as a 360 DPI image (the Epson's native resolution).
+  - **Cut layer:** each cut circle as a vector path in the **`CutContour`** spot colour (0.25 pt, 100% magenta). It's on a PDF layer marked "don't print", so an ordinary print won't show it.
+  - **To use it:** open the PDF in the MicroCut software, add registration marks, print from there, then cut along `CutContour`.
+- **DXF:** cut circles only, at exactly the same positions in mm, for cutter software that prefers DXF.
+- **พิมพ์ทุกแผ่น:** prints straight from the browser at true size, one sheet per page. Set Scale to 100%. **พิมพ์เส้นตัดสีเทา** adds thin grey guides for cutting by hand.
 
 ### Photo handling
-- EXIF orientation is applied when the photo is decoded (`src/lib/exif.ts`):
-  - Chromium and Firefox use `createImageBitmap(..., { imageOrientation: 'from-image' })`.
-  - Safari decodes through `<img>`, which applies EXIF natively.
-- Photos longer than **4000 px** are downscaled (`MAX_PHOTO_PX`). They are then saved as a JPEG without EXIF data, so a refresh restores them exactly.
-- The iOS picker converts HEIC photos to JPEG. Android Chrome cannot decode HEIC, so the user sees a friendly error and can pick another photo.
+- EXIF orientation is applied when the photo is decoded (`src/lib/exif.ts`). Photos longer than 4000 px are downscaled first.
+- The phone renders the finished sticker (827 × 827 px, 600 DPI at 35 mm) and sends it as a JPEG (~150–300 KB). The admin side clips it to the circle.
+- The phone keeps its work in IndexedDB until the class ends, so a refresh doesn't lose it.
+- **บันทึกรูปลงเครื่อง** still saves a PNG with 600 DPI metadata to the student's own phone.
 
-### Print output (`src/lib/exportPng.ts`, `src/components/PrintView.tsx`)
-- **PNG:** 827 × 827 px (600 DPI at 35 mm). The photo is drawn first, the frame on top, then everything is clipped to a circle with **transparent corners**. A `pHYs` chunk (23629 px/m ≈ 600 DPI) tells image viewers and print dialogs the physical size.
-- **พิมพ์ (Print):** prints one circle with `@page { size: auto; margin: 0 }` and the image at exactly `width: 35mm; height: 35mm`.
-- **พิมพ์แผ่นสติกเกอร์ A4:** a centered A4 page with 5 columns × 7 rows and 2 mm gutters (183 × 257 mm). A selector sets how many circles to print (1–35, default 1; change `SHEET_DEFAULT_COUNT` in `src/config.ts`). To get a PDF, use the browser's "Save as PDF".
-- The UI shows this tip under the buttons: **"พิมพ์ที่ขนาดจริง 100% (ไม่ย่อ/ขยาย)"**.
+### Privacy and security
+- Photos are stored only in Upstash Redis, under keys that **expire automatically at the class end time**. Nothing is kept longer than the class.
+- **Sending** requires the class code from the QR link. The server checks the image type and size (≤ 1.5 MB) and caps a class at 200 photos.
+- **Viewing photos** requires the admin login:
+  - The login is an HttpOnly, SameSite=Strict cookie, valid for 12 h and signed with a key derived from `ADMIN_PASSWORD` (changing the password logs everyone out).
+  - After 10 wrong passwords, logins from that address are locked for 15 minutes.
+- **Replacing a photo** uses a signed token that only the phone that sent it holds.
+- Batch stickers never leave the admin's browser.
 
-The print markup always stays in the page (hidden on screen) with the latest export. That way `window.print()` can run directly inside the tap, which iOS Safari requires.
+## API (`api/`, Vercel Functions)
 
-### The 1-hour rule (`src/lib/session.ts`)
-- The single constant is `SESSION_TTL_MINUTES = 60` in `src/config.ts`.
-- `createdAt` is saved when the first photo is picked. Changing the photo keeps the original window; *Start over* resets it.
-- The app checks the time **on load, every 30 s, and whenever the tab becomes visible again**. If `now - createdAt > 60 min`, it wipes everything (IndexedDB and sessionStorage) and shows the Expired screen.
-- Refreshing within the hour restores the photo, position, zoom, rotation, frame and screen.
-- If a customer closes the tab and never comes back, the data stays only in their own browser. It is wiped the next time they open the site.
+| Endpoint | Who | Purpose |
+| --- | --- | --- |
+| `GET /api/session?code=` | students | Is this class open? (workshop name, end time) |
+| `POST /api/submit` | students | Send or replace a sticker |
+| `GET/POST/DELETE /api/admin/login` | admin | Status, log in, log out |
+| `GET/POST/DELETE /api/admin/session` | admin | Current class and photo list, start a class, end it and delete everything |
+| `GET/DELETE /api/admin/photo?id=` | admin | One photo, remove one photo |
 
-### Privacy note
-Nothing is uploaded. The only network requests are for the static app files, the frame PNGs and Google Fonts, and there are no analytics. To check, open DevTools → Network: image data only ever shows up as local `blob:` URLs.
+Shared types and limits live in `shared/classSession.ts` (`CLASS_SESSION_MINUTES = 60`).
 
 ## Frames
 
@@ -138,9 +172,11 @@ The asset paths are in `src/brand.ts`, and the files are in `public/brand/`:
 1. **The colours come from the client's logo and frames, not from the baihor.com stylesheets.** The build environment couldn't reach the site. The font is Niramit (นิรมิต), chosen by the client. To change colours or fonts, update `src/styles/brand.css`, `FRAME_TEXT_FONT` in `src/config.ts`, and the Google Fonts link in `index.html`.
 2. The leaf decoration is a stand-in for the site's leaf motif (see "Brand assets").
 3. The frame names in `frames.json` are descriptive Thai colour names I chose ("· ยาดม" marks the "Your Own Herbal Inhaler" versions). Rename them freely.
-4. "Edited images last 1 hour" means the customer's own browser clears them after 60 minutes. Nothing is stored on a server.
+4. "1 hour" means 60 minutes from when the admin starts the class (`CLASS_SESSION_MINUTES` in `shared/classSession.ts`). The class closes and its photos are deleted then, so print or download the PDFs before it ends. An admin page already open keeps the downloaded photos in memory until it is closed.
 5. Frame files are square transparent PNGs designed for a circular crop.
-6. The sticker is 35 mm at 600 DPI (827 px). To change the size, edit `PRINT_DIAMETER_MM` in `src/config.ts`. The export size, DPI metadata, filename and the "3.5 cm" text follow automatically, but the A4 layout in `SHEET` (and the description in `index.html`) must be checked by hand. To change the resolution, edit `EXPORT_DPI`.
+6. Students' stickers are rendered at 35 mm / 600 DPI (827 px; `PRINT_DIAMETER_MM` and `EXPORT_DPI` in `src/config.ts`). The admin can print them at another size (the "ขนาดสติกเกอร์ผู้เรียน" setting). Sheet defaults (A3, 12 mm margin, 3 mm gap, 1 mm bleed) are `SHEET_DEFAULTS` in the same file.
+9. The admin page is in Thai only (staff-facing). The student app has Thai and English.
+10. The MicroCut software's exact import options weren't available to test. The PDF uses the common `CutContour` print-and-cut convention, with a DXF as a fallback. If the cutter needs more room for its marks, increase "ขอบกระดาษ".
 7. The UI spells the brand **Homprung / หอมปรุง**, while the Vercel project name stays `homeprungphotobooth`.
 8. The "เปิดกล้องถ่ายรูป" shortcut opens the front (selfie) camera. For the rear camera, change `capture` in `src/components/PhotoInput.tsx` to `environment`.
 
@@ -154,50 +190,41 @@ The asset paths are in `src/brand.ts`, and the files are in `public/brand/`:
 
 ## QR code
 
-Point the QR code at the production URL. You can add a workshop label:
-
-```
-https://homeprungphotobooth.vercel.app/
-https://homeprungphotobooth.vercel.app/?workshop=Bangkok%20Oct%202026
-```
-
-Any QR tool works. To generate one locally (nothing is uploaded):
-
-```bash
-npx qrcode -o qr.png -w 1024 "https://homeprungphotobooth.vercel.app/?workshop=Bangkok%20Oct%202026"
-```
-
-Use error-correction level M or higher, and print the QR at least 3 cm wide.
+The admin page generates the class QR code itself (`/?s=CODE`) and can show it full-screen. A new class gets a new code, so print or project the QR shown for the current class.
 
 ## Acceptance checklist
 
-Checked automatically in headless Chromium (Pixel 7 emulation):
-- [x] The exported PNG is 827×827 RGBA with transparent corners and pHYs = 600 DPI.
-- [x] A photo with EXIF orientation 6 comes out rotated correctly.
-- [x] The print view image measures 35 mm, and 35 circles (5 × 7) fit on one A4 page.
-- [x] A refresh restores work. A record older than 60 min is wiped on load and the Expired screen appears.
-- [x] No network request carries image data (only `blob:` URLs).
-- [x] A photo larger than 4000 px is downscaled and loads.
+Checked automatically in headless Chromium (local dev server, in-memory storage):
+- [x] Admin login rejects a wrong password; a class starts with a code and QR.
+- [x] 3 students send photos with names; one edits and resends, which replaces the photo instead of adding one. A refresh keeps the "sent" screen.
+- [x] No class code shows "สแกน QR โค้ด…"; a wrong or ended class shows "รอบนี้ปิดรับรูปแล้ว".
+- [x] The admin sees the photos, sets copies, and adds 40 × 50 mm batch stickers. Packing gives 45 stickers on 2 A3 sheets, or 3 A4.
+- [x] The sheet PDF is A3 with a 360 DPI image and 40 `CutContour` circles on a non-printing layer. The DXF has the matching circles.
+- [x] Ending the class deletes everything; a later send from a student's phone is refused.
+- [x] Packing never overlaps or crosses the margin (unit test over A3/A4 and 25–50 mm).
 
-Still to do on real devices or with the client:
-- [ ] iPhone Safari and Android Chrome with real camera-roll photos (including HEIC).
-- [ ] Print and measure 35 mm with a ruler (single circle and A4 sheet).
-- [ ] Confirm fonts and colours against baihor.com, and swap in the real leaf motif.
-- [ ] Lighthouse mobile ≥ 90 on the deployed URL.
+Still to do after deploying:
+- [ ] Set up Upstash + `ADMIN_PASSWORD` on Vercel (see "Set up").
+- [ ] Run a test class with real phones (iPhone Safari, Android Chrome).
+- [ ] Import a sheet PDF into the MicroCut software, print on the L18050, cut, and check the cut lines line up.
 
 ## Project structure
 
 ```
+api/                 Vercel Functions (session, submit, admin/login, admin/session, admin/photo)
+  _lib/              storage (Upstash Redis / in-memory), auth + HTTP helpers
+shared/              types and limits used by both api/ and src/
 public/
   frames/            PNG frames + thumbs/ + frames.json
   brand/             Baihor logo, favicons, leaf decoration
 scripts/
   prepare-frames.py  optional: resize/optimise new frames + thumbnails
 src/
-  components/        Landing, Editor, FramePicker, PrintActions, PrintView, DoneScreen, ExpiredScreen, …
-  lib/               compose.ts, exportPng.ts (pHYs), session.ts (TTL), exif.ts, frames.ts
+  admin/             admin page: class, photos, batch stickers, sheets, PDF/DXF export
+  components/        student screens: Landing, Editor, FramePicker, SendPanel, SentScreen, …
+  lib/               pack.ts (sheet packing), compose.ts, exportPng.ts, session.ts, api.ts, …
   styles/            brand.css (CI variables), app.css
-  config.ts          SESSION_TTL_MINUTES, EXPORT_PX, sheet layout, …
-  i18n.ts            Thai / English strings
+  config.ts          sticker size, DPI, sheet defaults, …
+  i18n.ts            Thai / English strings (student app)
 vercel.json
 ```

@@ -1,6 +1,4 @@
-/** How long a customer's photo + edit state survives in their own browser. */
-export const SESSION_TTL_MINUTES = 60;
-/** How often the expiry check (and countdown) runs. */
+/** How often the class-end check (and countdown) runs. The class length is CLASS_SESSION_MINUTES in shared/. */
 export const SESSION_CHECK_INTERVAL_MS = 30_000;
 
 /** Physical print size of the circle. Everything below (export size, sheet text, filename) follows it. */
@@ -21,19 +19,19 @@ export const ZOOM_MIN = 1;
 export const ZOOM_MAX = 5;
 
 /**
- * A4 sticker sheet layout. At 35 mm with 2 mm gutters, 5 × 7 = 183 × 257 mm,
- * leaving ≥13 mm margins that every printer can reach.
+ * Admin sticker sheet defaults, chosen for the Epson L18050 (A3) + MicroCut
+ * 30Q print-and-cut kit. All of them can be changed on the admin page.
  */
-export const SHEET = {
-  columns: 5,
-  rows: 7,
-  gutterMm: 2,
-  pageWidthMm: 210,
-  pageHeightMm: 297,
+export const SHEET_DEFAULTS = {
+  paper: 'A3',
+  /** Room around the edge for the cutter's registration marks. */
+  marginMm: 12,
+  /** Space between cut lines. Must be more than 2 × bleed. */
+  gapMm: 3,
+  /** Each image prints this much larger than its cut line, so a slightly off cut shows no white edge. */
+  bleedMm: 1,
+  copiesPerPerson: 1,
 } as const;
-export const SHEET_MAX = SHEET.columns * SHEET.rows;
-/** Stickers per A4 sheet selected by default. */
-export const SHEET_DEFAULT_COUNT = 1;
 
 /**
  * Custom text band defaults, measured from the HOMPRUNG BY BAIHOR frames:

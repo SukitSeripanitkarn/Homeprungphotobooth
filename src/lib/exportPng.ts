@@ -59,19 +59,20 @@ function physChunk(ppm: number): Uint8Array {
   return chunk;
 }
 
-/** Renders the final EXPORT_PX square with a circular alpha mask. */
+/** Renders the final square (EXPORT_PX by default) with a circular alpha mask. */
 export function renderExportCanvas(
   photo: Photo,
   edit: EditState,
   frame: HTMLImageElement | null,
   overlay: FrameOverlay | null = null,
+  px = EXPORT_PX,
 ) {
   const canvas = document.createElement('canvas');
-  canvas.width = EXPORT_PX;
-  canvas.height = EXPORT_PX;
+  canvas.width = px;
+  canvas.height = px;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D not available');
-  compose(ctx, EXPORT_PX, photo, edit, frame, overlay);
+  compose(ctx, px, photo, edit, frame, overlay);
   return canvas;
 }
 

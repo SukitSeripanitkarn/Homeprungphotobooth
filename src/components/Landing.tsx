@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { PRINT_DIAMETER_CM } from '../config';
 import { useI18n } from '../i18n';
 import { PhotoInput } from './PhotoInput';
@@ -8,12 +9,14 @@ interface Props {
   error: string | null;
   /** A frame image to preview the result on the landing page. */
   heroUrl: string | null;
+  countdown?: ReactNode;
 }
 
-export function Landing({ onFile, busy, error, heroUrl }: Props) {
+export function Landing({ onFile, busy, error, heroUrl, countdown }: Props) {
   const { t } = useI18n();
   return (
     <main className="screen landing">
+      {countdown}
       <div className="landing__hero" aria-hidden="true">
         {heroUrl && <img src={heroUrl} alt="" width={200} height={200} fetchPriority="high" />}
         <span>{PRINT_DIAMETER_CM} cm</span>

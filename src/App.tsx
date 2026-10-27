@@ -1,31 +1,40 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { SESSION_CHECK_INTERVAL_MS, SHEET_DEFAULT_COUNT } from './config';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { SESSION_CHECK_INTERVAL_MS } from './config';
 import { STRINGS, I18nContext, type Lang } from './i18n';
 import { Countdown } from './components/Countdown';
-import { DoneScreen } from './components/DoneScreen';
 import { Editor } from './components/Editor';
-import { ExpiredScreen } from './components/ExpiredScreen';
 import { FramePicker } from './components/FramePicker';
 import { FrameTextInput } from './components/FrameTextInput';
 import { Header } from './components/Header';
+import { InfoScreen } from './components/InfoScreen';
 import { Landing } from './components/Landing';
 import { PhotoInput } from './components/PhotoInput';
-import { PrintActions } from './components/PrintActions';
-import { PrintView, printNow, type PrintMode } from './components/PrintView';
-import { loadFrameTextFont, type FrameOverlay } from './lib/arcText';
+import { SendPanel } from './components/SendPanel';
+import { SentScreen } from './components/SentScreen';
+import { ApiError, canvasToJpegDataUrl, getClassSession, submitSticker } from './lib/api';
 import { loadStoredPhoto, preparePhoto } from './lib/exif';
-import { downloadBlob, exportPng } from './lib/exportPng';
-import { loadFrameImage, loadFrameManifest } from './lib/frames';
-import { clearSession, isExpired, loadSession, savePhoto, saveState } from './lib/session';
+import { downloadBlob, exportPng, renderExportCanvas } from './lib/exportPng';
+import { loadFrameManifest } from './lib/frames';
+import { clearSession, isExpired, loadSession, savePhoto, saveState, type StateRecord } from './lib/session';
 import { DEFAULT_EDIT, type EditState, type FrameEntry, type Photo } from './lib/types';
+import { useFrameState } from './lib/useFrameState';
 
-type Screen = 'boot' | 'landing' | 'editor' | 'done' | 'expired';
+type Screen = 'boot' | 'noClass' | 'closed' | 'offline' | 'landing' | 'editor' | 'sent' | 'expired';
+
+interface ClassInfo {
+  code: string;
+  workshop: string;
+  expiresAt: number;
+  /** serverNow - Date.now(), so a phone with a wrong clock still counts down correctly. */
+  clockOffset: number;
+}
 
 const LANG_KEY = 'homprung-photobooth:lang';
 
-function readWorkshop(): string | null {
-  const w = new URLSearchParams(window.location.search).get('workshop')?.trim();
-  return w ? w.slice(0, 40) : null;
+/** Class code from the QR link: /?s=ABC123 */
+function readClassCode(): string | null {
+  const s = new URLSearchParams(window.location.search).get('s')?.trim().toUpperCase();
+  return s && /^[A-Z0-9]{4,12}$/.test(s) ? s : null;
 }
 
 function readLang(): Lang {
@@ -60,57 +69,61 @@ export default function App() {
     document.documentElement.lang = lang;
   }, [lang]);
 
-  const workshop = useMemo(readWorkshop, []);
+  const code = useMemo(readClassCode, []);
+  const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
 
   const [screen, setScreen] = useState<Screen>('boot');
   const [photo, setPhoto] = useState<Photo | null>(null);
-  const [createdAt, setCreatedAt] = useState<number | null>(null);
   const [edit, setEdit] = useState<EditState>(DEFAULT_EDIT);
   const [frameId, setFrameId] = useState<string | null>(null);
   const [frameText, setFrameText] = useState('');
-  const [fontEpoch, setFontEpoch] = useState(0);
+  const [name, setName] = useState('');
+  const [submission, setSubmission] = useState<StateRecord['submission']>(undefined);
   const [frames, setFrames] = useState<FrameEntry[] | null>(null);
-  const [loadedFrame, setLoadedFrame] = useState<{ id: string; image: HTMLImageElement } | null>(null);
   const [framesError, setFramesError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
-  const [sheetCount, setSheetCount] = useState(SHEET_DEFAULT_COUNT);
-  const [exportUrl, setExportUrl] = useState<string | null>(null);
-  const exportBlobRef = useRef<Blob | null>(null);
-  const exportDirty = useRef(true);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const frame = frames?.find((f) => f.id === frameId) ?? frames?.[0] ?? null;
+  const { frame, frameImage, frameReady, frameError, overlay, fontEpoch } = useFrameState(frames, frameId, frameText);
+  const serverNow = useCallback(() => Date.now() + (classInfo?.clockOffset ?? 0), [classInfo]);
 
-  // Load the selected frame's full image on demand (thumbnails are used in the picker).
-  useEffect(() => {
-    if (!frame) return;
-    let current = true;
-    loadFrameImage(frame)
-      .then((image) => current && setLoadedFrame({ id: frame.id, image }))
-      .catch(() => current && setFramesError(true));
-    return () => {
-      current = false;
-    };
-  }, [frame]);
-  const frameImage = loadedFrame?.image ?? null;
-  // Until the chosen frame has decoded, exports would still show the previous one.
-  const frameReady = !frame || loadedFrame?.id === frame.id;
+  // ---- boot: frames, the class from the QR link, then any saved work ----
+  const boot = useCallback(async () => {
+    if (!code) return setScreen('noClass');
+    setScreen('boot');
+    let info: ClassInfo;
+    try {
+      const s = await getClassSession(code);
+      info = { code, workshop: s.workshop, expiresAt: s.expiresAt, clockOffset: s.now - Date.now() };
+    } catch (err) {
+      const ended = err instanceof ApiError && err.code === 'no_session';
+      if (ended) await clearSession();
+      return setScreen(ended ? 'closed' : 'offline');
+    }
+    setClassInfo(info);
 
-  // Custom curved text, only on frames that have an empty band for it.
-  const overlay = useMemo<FrameOverlay | null>(
-    () => (frame?.textArea && frameText.trim() ? { text: frameText, area: frame.textArea } : null),
-    [frame, frameText],
-  );
-  useEffect(() => {
-    let current = true;
-    loadFrameTextFont(frameText).then(() => current && setFontEpoch((n) => n + 1));
-    return () => {
-      current = false;
-    };
-  }, [frameText]);
+    const res = await loadSession(code, Date.now() + info.clockOffset);
+    if (res.kind !== 'active') return setScreen(res.kind === 'expired' ? 'expired' : 'landing');
+    try {
+      setPhoto(await loadStoredPhoto(res.photo.blob));
+      if (res.state) {
+        setEdit(res.state.edit);
+        setFrameId(res.state.frameId);
+        setFrameText(res.state.frameText ?? '');
+        setName(res.state.name ?? '');
+        setSubmission(res.state.submission);
+      }
+      setScreen(res.state?.screen === 'done' && res.state.submission ? 'sent' : 'editor');
+    } catch {
+      await clearSession();
+      setScreen('landing');
+    }
+  }, [code]);
 
-  // ---- boot: frames + restore a saved session ----
   useEffect(() => {
     loadFrameManifest()
       .then(setFrames)
@@ -119,50 +132,33 @@ export default function App() {
         setFrames([]);
         setFramesError(true);
       });
+    boot();
+  }, [boot]);
 
-    (async () => {
-      const res = await loadSession();
-      if (res.kind === 'expired') return setScreen('expired');
-      if (res.kind === 'none') return setScreen('landing');
-      try {
-        setPhoto(await loadStoredPhoto(res.photo.blob));
-        setCreatedAt(res.photo.createdAt);
-        if (res.state) {
-          setEdit(res.state.edit);
-          setFrameId(res.state.frameId);
-          setFrameText(res.state.frameText ?? '');
-        }
-        setScreen(res.state?.screen ?? 'editor');
-      } catch {
-        await clearSession();
-        setScreen('landing');
-      }
-    })();
-  }, []);
-
-  // ---- wipe everything ----
-  const reset = useCallback(async (next: Screen) => {
+  // ---- wipe local work ----
+  const reset = useCallback(async (next: Screen, keepName = false) => {
     await clearSession();
     setPhoto(null);
-    setCreatedAt(null);
     setEdit(DEFAULT_EDIT);
     setFrameText('');
+    if (!keepName) setName('');
+    setSubmission(undefined);
     setError(null);
-    exportBlobRef.current = null;
-    setExportUrl((old) => {
+    setSendError(null);
+    setPreviewUrl((old) => {
       if (old) URL.revokeObjectURL(old);
       return null;
     });
     setScreen(next);
   }, []);
 
-  // ---- 1-hour rule: check now, every 30 s, and when the tab becomes visible ----
+  // ---- class end: check now, every 30 s, and when the tab becomes visible ----
   useEffect(() => {
-    if (createdAt == null) return;
+    if (!classInfo) return;
     const check = () => {
-      const n = Date.now();
+      const n = serverNow();
       setNow(n);
-      if (isExpired(createdAt, n)) reset('expired');
+      if (isExpired(classInfo.expiresAt, n)) reset('expired');
     };
     check();
     const id = window.setInterval(check, SESSION_CHECK_INTERVAL_MS);
@@ -172,47 +168,33 @@ export default function App() {
       clearInterval(id);
       document.removeEventListener('visibilitychange', onVis);
     };
-  }, [createdAt, reset]);
+  }, [classInfo, serverNow, reset]);
 
   // ---- persist edit state (debounced) so a refresh restores work ----
   useEffect(() => {
-    if (!photo || (screen !== 'editor' && screen !== 'done')) return;
-    const id = window.setTimeout(() => saveState({ edit, frameId: frame?.id ?? null, frameText, screen }), 300);
+    if (!photo || (screen !== 'editor' && screen !== 'sent')) return;
+    const state: StateRecord = {
+      edit,
+      frameId: frame?.id ?? null,
+      frameText,
+      name,
+      submission,
+      screen: screen === 'sent' ? 'done' : 'editor',
+    };
+    const id = window.setTimeout(() => saveState(state), 300);
     return () => clearTimeout(id);
-  }, [photo, edit, frame, frameText, screen]);
-
-  // ---- keep an up-to-date export for print + done preview ----
-  const refreshExport = useCallback(async () => {
-    if (!photo) return null;
-    const blob = await exportPng(photo, edit, frameImage, overlay);
-    exportBlobRef.current = blob;
-    exportDirty.current = false;
-    setExportUrl((old) => {
-      if (old) URL.revokeObjectURL(old);
-      return URL.createObjectURL(blob);
-    });
-    return blob;
-  }, [photo, edit, frameImage, overlay, fontEpoch]);
-
-  useEffect(() => {
-    exportDirty.current = true;
-    if (!photo) return;
-    const id = window.setTimeout(() => refreshExport().catch(console.error), 250);
-    return () => clearTimeout(id);
-  }, [photo, refreshExport]);
+  }, [photo, edit, frame, frameText, name, submission, screen]);
 
   // ---- actions ----
   const handleFile = useCallback(
     async (file: File) => {
+      if (!classInfo) return;
       setBusy(true);
       setError(null);
       try {
         const prepared = await preparePhoto(file);
-        // Changing the photo keeps the original 1-hour window.
-        const started = createdAt ?? Date.now();
-        await savePhoto({ createdAt: started, blob: prepared.blob });
+        await savePhoto({ code: classInfo.code, expiresAt: classInfo.expiresAt, blob: prepared.blob });
         setPhoto(prepared.photo);
-        setCreatedAt(started);
         setEdit(DEFAULT_EDIT);
         setScreen('editor');
       } catch (err) {
@@ -222,58 +204,88 @@ export default function App() {
         setBusy(false);
       }
     },
-    [createdAt, t],
+    [classInfo, t],
   );
+
+  const exportCanvas = () => (photo ? renderExportCanvas(photo, edit, frameImage, overlay) : null);
+
+  const showPreview = (canvas: HTMLCanvasElement) =>
+    canvas.toBlob((b) =>
+      setPreviewUrl((old) => {
+        if (old) URL.revokeObjectURL(old);
+        return b ? URL.createObjectURL(b) : null;
+      }),
+    );
+
+  // After a refresh on the "sent" screen, rebuild its preview once the frame is ready.
+  useEffect(() => {
+    if (screen !== 'sent' || !photo || !frameReady || previewUrl) return;
+    showPreview(renderExportCanvas(photo, edit, frameImage, overlay));
+  }, [screen, photo, frameReady, previewUrl, edit, frameImage, overlay, fontEpoch]);
+
+  const handleSend = async () => {
+    const canvas = exportCanvas();
+    if (!canvas || !classInfo) return;
+    setSending(true);
+    setSendError(null);
+    try {
+      const res = await submitSticker({
+        code: classInfo.code,
+        name: name.trim(),
+        image: canvasToJpegDataUrl(canvas),
+        ...(submission ?? {}),
+      });
+      const sent = { id: res.id, token: res.token };
+      setSubmission(sent);
+      // Save right away (not debounced) so a refresh can't lose the replace token.
+      await saveState({ edit, frameId: frame?.id ?? null, frameText, name, submission: sent, screen: 'done' });
+      showPreview(canvas);
+      setScreen('sent');
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'no_session') {
+        await reset('closed');
+      } else {
+        setSendError(err instanceof ApiError && err.code === 'full' ? t.sendFull : t.sendError);
+      }
+    } finally {
+      setSending(false);
+    }
+  };
 
   const handleDownload = async () => {
+    if (!photo) return;
     try {
-      const blob = !exportDirty.current && exportBlobRef.current ? exportBlobRef.current : await refreshExport();
-      if (blob) downloadBlob(blob);
-      setScreen('done');
+      downloadBlob(await exportPng(photo, edit, frameImage, overlay));
     } catch (err) {
       console.error(err);
       alert(t.exportError);
     }
   };
 
-  const handlePrint = async (mode: PrintMode) => {
-    try {
-      if (exportDirty.current || !exportUrl) {
-        await refreshExport();
-        // Let React commit the new <img> src before printing.
-        await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 50)));
-      }
-      printNow(mode);
-      setScreen('done');
-    } catch (err) {
-      console.error(err);
-      alert(t.exportError);
-    }
+  const nextPerson = () => {
+    if (window.confirm(t.confirmNextPerson)) reset('landing');
   };
 
-  const startOver = () => {
-    if (window.confirm(t.confirmStartOver)) reset('landing');
-  };
-
-  const countdown = createdAt != null ? <Countdown createdAt={createdAt} now={now} /> : null;
-  const actions = (
-    <PrintActions
-      onDownload={handleDownload}
-      onPrint={() => handlePrint('single')}
-      onPrintSheet={() => handlePrint('sheet')}
-      sheetCount={sheetCount}
-      onSheetCount={setSheetCount}
-      disabled={!photo || !frameReady}
-    />
-  );
+  const countdown = classInfo ? <Countdown expiresAt={classInfo.expiresAt} now={now} /> : null;
 
   return (
     <I18nContext.Provider value={i18n}>
       <div className="app">
-        <Header workshop={workshop} />
+        <Header workshop={classInfo?.workshop || null} />
         {screen === 'boot' && <div className="screen" aria-busy="true" />}
-        {screen === 'landing' && <Landing onFile={handleFile} busy={busy} error={error} heroUrl={frames?.[0]?.url ?? null} />}
-        {screen === 'expired' && <ExpiredScreen onStartOver={() => reset('landing')} />}
+        {screen === 'noClass' && <InfoScreen title={t.noClassTitle} text={t.noClassText} />}
+        {screen === 'closed' && <InfoScreen title={t.closedTitle} text={t.closedText} />}
+        {screen === 'expired' && <InfoScreen title={t.expiredTitle} text={t.expiredText} />}
+        {screen === 'offline' && (
+          <InfoScreen title={t.offlineTitle} text={t.offlineText}>
+            <button type="button" className="btn btn--primary" onClick={boot}>
+              {t.retry}
+            </button>
+          </InfoScreen>
+        )}
+        {screen === 'landing' && (
+          <Landing onFile={handleFile} busy={busy} error={error} heroUrl={frames?.[0]?.url ?? null} countdown={countdown} />
+        )}
         {screen === 'editor' && photo && (
           <Editor
             photo={photo}
@@ -290,20 +302,36 @@ export default function App() {
               </PhotoInput>
             }
             framePicker={
-              <FramePicker frames={frames} error={framesError} selectedId={frame?.id ?? null} onSelect={setFrameId} />
+              <FramePicker
+                frames={frames}
+                error={framesError || frameError}
+                selectedId={frame?.id ?? null}
+                onSelect={setFrameId}
+              />
             }
             textInput={<FrameTextInput value={frameText} onChange={setFrameText} available={!!frame?.textArea} />}
-            actions={actions}
-            onDone={() => setScreen('done')}
+            actions={
+              <SendPanel
+                name={name}
+                onName={setName}
+                onSend={handleSend}
+                onDownload={handleDownload}
+                sent={!!submission}
+                sending={sending}
+                error={sendError}
+                disabled={!frameReady}
+              />
+            }
           />
         )}
-        {screen === 'done' && photo && (
-          <DoneScreen
-            previewUrl={exportUrl}
-            actions={actions}
-            onBack={() => setScreen('editor')}
-            onStartOver={startOver}
+        {screen === 'sent' && photo && (
+          <SentScreen
+            previewUrl={previewUrl}
+            name={name}
             countdown={countdown}
+            onEdit={() => setScreen('editor')}
+            onNextPerson={nextPerson}
+            onDownload={handleDownload}
           />
         )}
         {error && screen === 'editor' && (
@@ -312,7 +340,6 @@ export default function App() {
           </p>
         )}
       </div>
-      {exportUrl && <PrintView url={exportUrl} count={sheetCount} />}
     </I18nContext.Provider>
   );
 }

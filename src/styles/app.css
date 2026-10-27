@@ -414,46 +414,6 @@ img {
   box-shadow: 0 0 0 3px var(--brand-highlight) inset;
 }
 
-/* ---------- print actions ---------- */
-.print-actions {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  border-radius: var(--radius);
-  background: var(--bg-soft);
-}
-.sheet-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-}
-.sheet-row__count {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-}
-.sheet-row__count select {
-  min-height: 40px;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  font: inherit;
-  background: var(--surface);
-}
-.print-tip {
-  margin: 0;
-  font-size: 14px;
-  color: var(--brand-primary-dark);
-}
-.print-tip small {
-  color: var(--text-muted);
-}
-
 /* ---------- done ---------- */
 .done__preview {
   width: 200px;
@@ -461,7 +421,63 @@ img {
   filter: drop-shadow(0 6px 16px rgba(31, 77, 41, 0.18));
 }
 
-/* ---------- print ---------- */
+/* ---------- shared form bits ---------- */
+.text-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  /* 16px+ stops iOS Safari zooming the page on focus */
+  font: 500 17px var(--font-heading);
+}
+.text-input:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+}
+.field-hint {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.send-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+  text-align: left;
+}
+.send-panel .section-title,
+.send-panel .field-hint {
+  align-self: stretch;
+}
+.send-panel .section-title {
+  margin: 0;
+}
+.send-panel .field-hint {
+  margin-top: -6px;
+}
+.done__name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  color: var(--brand-primary);
+}
+.frames__none {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px dashed var(--border);
+  background: var(--surface);
+}
+
+/* ---------- print (admin sticker sheets) ---------- */
 @media screen {
   #print-root {
     display: none;
@@ -480,22 +496,17 @@ img {
   #print-root {
     display: block;
   }
-  #print-root img {
-    display: block;
+  .print-page {
+    break-after: page;
+    page-break-after: always;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .print-single {
-    padding: 10mm;
+  .print-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
   }
-  .print-sheet {
-    display: grid;
-    width: 210mm;
-    box-sizing: border-box;
-  }
-  html[data-print-mode='single'] .print-sheet,
-  html[data-print-mode='sheet'] .print-single,
-  html:not([data-print-mode]) .print-sheet {
-    display: none;
+  .print-page svg {
+    display: block;
   }
 }

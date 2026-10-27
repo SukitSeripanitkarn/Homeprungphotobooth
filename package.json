@@ -8,13 +8,18 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
-    "frames:prepare": "python3 scripts/prepare-frames.py"
+    "frames:prepare": "python3 scripts/prepare-frames.py",
+    "test:pack": "node scripts/test-pack.ts"
   },
   "dependencies": {
+    "@upstash/redis": "^1.40.0",
+    "qrcode": "^1.5.4",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",

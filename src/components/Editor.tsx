@@ -15,11 +15,10 @@ interface Props {
   fontEpoch: number;
   onReset: () => void;
   changePhoto: ReactNode;
-  countdown: ReactNode;
+  countdown?: ReactNode;
   framePicker: ReactNode;
   textInput: ReactNode;
   actions: ReactNode;
-  onDone: () => void;
 }
 
 export function Editor({
@@ -35,7 +34,6 @@ export function Editor({
   framePicker,
   textInput,
   actions,
-  onDone,
 }: Props) {
   const { t } = useI18n();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -191,9 +189,6 @@ export function Editor({
       {textInput}
       {actions}
 
-      <button type="button" className="btn btn--link" onClick={onDone}>
-        {t.done} →
-      </button>
     </main>
   );
 }
