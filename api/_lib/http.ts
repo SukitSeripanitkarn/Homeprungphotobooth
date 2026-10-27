@@ -20,18 +20,25 @@ export function handler(fn: (req: Request) => Promise<Response>) {
       if (err instanceof StoreNotConfiguredError || err instanceof AdminNotConfiguredError) {
         return error(503, err.message, { code: 'not_configured' });
       }
-      if (err instanceof SyntaxError) return error(400, 'Invalid JSON');
+      if (err instanceof BadRequestError) return error(400, err.message);
       console.error(err);
       return error(500, 'Server error');
     }
   };
 }
 
+/** A problem with the client's request (as opposed to a server bug, which is a 500). */
+export class BadRequestError extends Error {}
+
 export async function readJson<T>(req: Request, maxBytes: number): Promise<T> {
-  if (!(req.headers.get('content-type') ?? '').includes('application/json')) throw new SyntaxError('Expected JSON');
+  if (!(req.headers.get('content-type') ?? '').includes('application/json')) throw new BadRequestError('Expected JSON');
   const text = await req.text();
-  if (text.length > maxBytes) throw new SyntaxError('Body too large');
-  return JSON.parse(text) as T;
+  if (text.length > maxBytes) throw new BadRequestError('Body too large');
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new BadRequestError('Invalid JSON');
+  }
 }
 
 // ---------------------------------------------------------------- auth

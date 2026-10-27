@@ -57,10 +57,13 @@ class RedisStore implements Store {
   }
 
   async listSubmissions(sessionId: string) {
-    const all = await this.redis.hgetall<Record<string, string>>(K.subs(sessionId));
-    return Object.values(all ?? {})
-      .map((v) => JSON.parse(v) as SubmissionMeta)
-      .sort((a, b) => a.createdAt - b.createdAt);
+    // With automaticDeserialization off, HGETALL comes back as the raw Redis
+    // reply: a flat [field, value, field, value, …] array, not an object.
+    const raw = (await this.redis.hgetall(K.subs(sessionId))) as unknown;
+    const values: string[] = Array.isArray(raw)
+      ? raw.filter((_, i) => i % 2 === 1)
+      : Object.values((raw as Record<string, string> | null) ?? {});
+    return values.map((v) => JSON.parse(v) as SubmissionMeta).sort((a, b) => a.createdAt - b.createdAt);
   }
 
   countSubmissions(sessionId: string) {
