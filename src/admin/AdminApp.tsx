@@ -1,13 +1,13 @@
 import QRCode from 'qrcode';
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { AdminSessionResponse, SubmissionMeta } from '../../api/_lib/classSession';
-import { PRINT_DIAMETER_MM } from '../config';
 import { STRINGS, I18nContext } from '../i18n';
 import { BrandLogo } from '../components/BrandLogo';
 import { PrefsToggles } from '../components/PrefsToggles';
 import { usePrefs } from '../lib/prefs';
 import { useAdminText } from './adminI18n';
+import { CmInput } from './CmInput';
 import {
   ApiError,
   adminDeletePhoto,
@@ -477,15 +477,14 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
                   <span className="extra-list__label">{x.label}</span>
                   <label className="inline-field">
                     {a.size}
-                    <input
+                    <CmInput
                       className="text-input text-input--num"
-                      type="number"
-                      min={10}
-                      max={250}
-                      value={x.diameterMm}
-                      onChange={(e) => updateExtra(x.id, { diameterMm: Math.max(10, Math.min(250, Number(e.target.value) || PRINT_DIAMETER_MM)) })}
+                      valueMm={x.diameterMm}
+                      minMm={10}
+                      maxMm={250}
+                      onChangeMm={(mm) => updateExtra(x.id, { diameterMm: mm })}
                     />
-                    {a.mm}
+                    {a.cm}
                   </label>
                   <label className="inline-field">
                     ×
@@ -521,10 +520,10 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
                 <option value="A4">{a.paperA4}</option>
               </select>
             </label>
-            <NumberField label={a.classSize} value={settings.classDiameterMm} min={10} max={250} onChange={(v) => set('classDiameterMm', v)} />
-            <NumberField label={a.margin} value={settings.marginMm} min={0} max={40} step={0.5} onChange={(v) => set('marginMm', v)} />
-            <NumberField label={a.gap} value={settings.gapMm} min={0} max={20} step={0.5} onChange={(v) => set('gapMm', v)} />
-            <NumberField label={a.bleed} value={settings.bleedMm} min={0} max={3} step={0.5} onChange={(v) => set('bleedMm', v)} />
+            <CmField label={a.classSize} valueMm={settings.classDiameterMm} minMm={10} maxMm={250} onChangeMm={(v) => set('classDiameterMm', v)} />
+            <CmField label={a.margin} valueMm={settings.marginMm} minMm={0} maxMm={40} onChangeMm={(v) => set('marginMm', v)} />
+            <CmField label={a.gap} valueMm={settings.gapMm} minMm={0} maxMm={20} stepCm={0.05} onChangeMm={(v) => set('gapMm', v)} />
+            <CmField label={a.bleed} valueMm={settings.bleedMm} minMm={0} maxMm={3} stepCm={0.05} onChangeMm={(v) => set('bleedMm', v)} />
             <label className="checkbox">
               <input type="checkbox" checked={settings.cutGuide} onChange={(e) => set('cutGuide', e.target.checked)} />
               {a.cutGuide}
@@ -589,29 +588,13 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
   );
 }
 
-function NumberField(props: { label: string; value: number; min: number; max: number; step?: number; onChange: (v: number) => void }) {
-  const [text, setText] = useState(String(props.value));
-  const last = useRef(props.value);
-  if (props.value !== last.current) {
-    last.current = props.value;
-    setText(String(props.value));
-  }
+/** Labelled length setting, entered in cm (stored in mm). */
+function CmField(props: { label: string } & Parameters<typeof CmInput>[0]) {
+  const { label, ...input } = props;
   return (
     <label>
-      {props.label}
-      <input
-        className="text-input"
-        type="number"
-        min={props.min}
-        max={props.max}
-        step={props.step ?? 1}
-        value={text}
-        onChange={(e) => {
-          setText(e.target.value);
-          const v = Number(e.target.value);
-          if (e.target.value !== '' && Number.isFinite(v) && v >= props.min && v <= props.max) props.onChange(v);
-        }}
-      />
+      {label}
+      <CmInput {...input} />
     </label>
   );
 }

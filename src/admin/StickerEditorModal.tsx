@@ -9,6 +9,7 @@ import { renderExportCanvas } from '../lib/exportPng';
 import { DEFAULT_EDIT, type EditState, type FrameEntry, type Photo } from '../lib/types';
 import { NO_FRAME, useFrameState } from '../lib/useFrameState';
 import type { ExtraSticker } from './adminStore';
+import { CmInput } from './CmInput';
 import { useAdminText } from './adminI18n';
 
 interface Props {
@@ -113,16 +114,8 @@ export function StickerEditorModal({ frames, onAdd, onClose }: Props) {
                 </label>
                 <div className="admin-form__row">
                   <label>
-                    {a.sizeMm}
-                    <input
-                      className="text-input"
-                      type="number"
-                      min={10}
-                      max={250}
-                      step={1}
-                      value={diameter}
-                      onChange={(e) => setDiameter(Math.max(10, Math.min(250, Number(e.target.value) || PRINT_DIAMETER_MM)))}
-                    />
+                    {a.sizeCm}
+                    <CmInput valueMm={diameter} minMm={10} maxMm={250} onChangeMm={setDiameter} />
                   </label>
                   <label>
                     {a.copies}
