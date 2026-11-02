@@ -9,6 +9,7 @@ function isFrameDef(v: unknown): v is FrameDef {
     typeof f.name === 'string' &&
     typeof f.file === 'string' &&
     (f.thumb === undefined || typeof f.thumb === 'string') &&
+    (f.hd === undefined || typeof f.hd === 'string') &&
     (f.textArea === undefined || (typeof f.textArea === 'object' && f.textArea !== null))
   );
 }
@@ -62,27 +63,32 @@ export async function loadFrameManifest(): Promise<FrameEntry[]> {
       ...def,
       url: FRAMES_BASE_URL + encodeURI(def.file),
       thumbUrl: FRAMES_BASE_URL + encodeURI(def.thumb ?? def.file),
+      hdUrl: FRAMES_BASE_URL + encodeURI(def.hd ?? def.file),
     }));
 }
 
 const cache = new Map<string, Promise<HTMLImageElement>>();
 
-/** Decodes (once) the full-size image of a frame. */
-export function loadFrameImage(frame: FrameEntry): Promise<HTMLImageElement> {
-  let p = cache.get(frame.url);
+/**
+ * Decodes (once) a frame image: the regular file (1280 px, enough for
+ * students' ≤ 1200 px stickers) or, with `hd`, the 2560 px copy.
+ */
+export function loadFrameImage(frame: FrameEntry, hd = false): Promise<HTMLImageElement> {
+  const url = hd ? frame.hdUrl : frame.url;
+  let p = cache.get(url);
   if (!p) {
     const img = new Image();
     img.decoding = 'async';
-    img.src = frame.url;
+    img.src = url;
     p = img.decode().then(() => {
       checkFrame(frame, img);
       return img;
     });
     p.catch(() => {
-      cache.delete(frame.url);
-      console.warn(`[frames] could not load "${frame.file}"`);
+      cache.delete(url);
+      console.warn(`[frames] could not load "${url}"`);
     });
-    cache.set(frame.url, p);
+    cache.set(url, p);
   }
   return p;
 }

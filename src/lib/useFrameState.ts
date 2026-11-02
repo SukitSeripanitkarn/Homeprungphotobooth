@@ -10,7 +10,8 @@ export const NO_FRAME = '';
  * Resolves the chosen frame, loads its full image and prepares the custom
  * text overlay. Shared by the student app and the admin sticker editor.
  */
-export function useFrameState(frames: FrameEntry[] | null, frameId: string | null, frameText: string) {
+export function useFrameState(frames: FrameEntry[] | null, frameId: string | null, frameText: string, opts: { hd?: boolean } = {}) {
+  const hd = !!opts.hd;
   const [loaded, setLoaded] = useState<{ id: string; image: HTMLImageElement } | null>(null);
   const [error, setError] = useState(false);
   const [fontEpoch, setFontEpoch] = useState(0);
@@ -20,13 +21,13 @@ export function useFrameState(frames: FrameEntry[] | null, frameId: string | nul
   useEffect(() => {
     if (!frame) return;
     let current = true;
-    loadFrameImage(frame)
+    loadFrameImage(frame, hd)
       .then((image) => current && setLoaded({ id: frame.id, image }))
       .catch(() => current && setError(true));
     return () => {
       current = false;
     };
-  }, [frame]);
+  }, [frame, hd]);
 
   // Custom curved text, only on frames that have an empty band for it.
   const overlay = useMemo<FrameOverlay | null>(

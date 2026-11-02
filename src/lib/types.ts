@@ -26,6 +26,8 @@ export interface FrameDef {
   file: string;
   /** Optional small preview for the picker; falls back to `file`. */
   thumb?: string;
+  /** Optional high-resolution copy (2560 px) for large, full-600-DPI stickers; falls back to `file`. */
+  hd?: string;
   /**
    * Present when the frame has an empty band where customers can add their
    * own curved text along the bottom. All fields are optional; see
@@ -48,4 +50,5 @@ export interface TextArea {
 export interface FrameEntry extends FrameDef {
   url: string;
   thumbUrl: string;
+  hdUrl: string;
 }

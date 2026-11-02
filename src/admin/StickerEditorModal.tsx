@@ -33,7 +33,8 @@ export function StickerEditorModal({ frames, defaultDiameterMm, onAdd, onClose }
   const [count, setCount] = useState(40);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { frame, frameImage, frameReady, overlay, fontEpoch } = useFrameState(frames, frameId, frameText);
+  // Batch stickers render at up to 2,600 px (10.4 cm at 600 DPI), so use the HD frames.
+  const { frame, frameImage, frameReady, overlay, fontEpoch } = useFrameState(frames, frameId, frameText, { hd: true });
 
   const pick = async (file: File) => {
     setBusy(true);

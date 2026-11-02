@@ -165,13 +165,19 @@ Only frames with `"textArea"` in `frames.json` offer it: the 16 classic and Thai
 For example: `"textArea": { "radius": 0.7, "color": "#5A0A2E" }`. The text uses Niramit SemiBold (600).
 
 **How the shipped files were made:**
-1. Each `sticker.ai` artboard (40 × 40 mm, transparent centre and corners) was rendered at 1024 px with poppler: `pdftocairo -png -transp -scale-to 1024 -singlefile -f N -l N sticker.ai fN`.
-2. They were then reduced with the optional helper below. It resizes, applies a 256-colour palette (about 70 KB per frame) and writes the thumbnail.
+1. Each `sticker.ai` artboard (40 × 40 mm, transparent centre and corners) was rendered at 2,560 px straight from the vector artwork with poppler: `pdftocairo -png -transp -scale-to 2560 -singlefile -f N -l N sticker.ai fN`.
+2. The helper below then writes three sizes with a 256-colour palette:
+   - `<id>.png` at 1,280 px (~100 KB): enough for students' stickers (≤ 1,200 px), and the only size phones download.
+   - `hd/<id>.png` at 2,560 px (~200 KB): used only by the admin's batch-sticker editor, so a 10.4 cm sticker gets the full 600 DPI (2,457 px).
+   - `thumbs/<id>.png` at 160 px: the picker.
+
+   Each frame's line in `frames.json` lists its `"hd"` file. Without it, the regular file is used everywhere.
 
 ```bash
 pip install pillow
 python3 scripts/prepare-frames.py ~/Downloads/new-frame.png my-frame-id
-# → public/frames/my-frame-id.png + public/frames/thumbs/my-frame-id.png
+# → public/frames/my-frame-id.png (1280 px) + hd/my-frame-id.png (2560 px) + thumbs/my-frame-id.png
+# then add  "hd": "hd/my-frame-id.png"  to its line in frames.json
 ```
 
 - Non-square frames are center-cropped to a square, and a warning is logged in the dev console.
@@ -230,7 +236,7 @@ The asset paths are in `src/brand.ts`, and the files are in `public/brand/`. The
 4. "1 hour" means 60 minutes from when the admin starts the class (`CLASS_SESSION_MINUTES` in `api/_lib/classSession.ts`). The class closes and its photos are deleted then, so print or download the PDFs before it ends. An admin page already open keeps the downloaded photos in memory until it is closed.
 5. Frame files are square transparent PNGs designed for a circular crop.
 6. Sticker images use 600 DPI up to 1,200 px (`EXPORT_DPI`, `MAX_STICKER_PX` in `src/config.ts`). For 7.8 and 10.4 cm that gives ~390 and ~290 DPI, which keeps phone uploads small. Batch stickers stay in the admin's browser and use the full 600 DPI.
-7. Workshop types, sizes, margin and gap live in `WORKSHOP_TYPES` (`api/_lib/classSession.ts`). The frame artwork is 1,024 px (drawn at 4 cm), so for the 10.4 cm sticker it prints at ~250 DPI. If it needs to be sharper, re-render the frames from `sticker.ai` at a higher resolution.
+7. Workshop types, sizes, margin and gap live in `WORKSHOP_TYPES` (`api/_lib/classSession.ts`). Frames are rendered from the vector artwork at 1,280 px (students) and 2,560 px (HD, batch stickers), so the frame is never the limit on print sharpness.
 8. The admin page is in Thai only (staff-facing). The student app has Thai and English.
 9. The MicroCut software's exact import options weren't available to test. The PDF uses the common `CutContour` print-and-cut convention, with a DXF as a fallback. If the cutter needs more room for its marks, increase "ขอบกระดาษ".
 10. The UI spells the brand **Homprung / หอมปรุง**, and the Vercel project and domain are `homprungphotobooth` (the GitHub repository is still named `Homeprungphotobooth`, which doesn't affect the site).

@@ -10,7 +10,8 @@ export const EXPORT_DPI = 600;
 /**
  * Largest sticker image a phone uploads. 600 DPI would make a 10.4 cm sticker
  * ~2,460 px (too big to upload and store reliably); 1,200 px still gives
- * ~290–390 DPI for the big stickers. The frame artwork itself is 1,024 px.
+ * ~290–390 DPI for the big stickers. Frames are 1,280 px (2,560 px HD copies
+ * are used for the admin's full-600-DPI batch stickers).
  */
 export const MAX_STICKER_PX = 1200;
 
