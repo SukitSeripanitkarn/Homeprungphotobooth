@@ -1,5 +1,5 @@
 import { Redis } from '@upstash/redis';
-import type { ClassSession, SubmissionMeta } from './classSession.js';
+import { DEFAULT_WORKSHOP_TYPES, type ClassSession, type SubmissionMeta, type WorkshopType } from './classSession.js';
 
 /**
  * Storage for the running class. Every key expires at the class end time,
@@ -20,6 +20,9 @@ export interface Store {
   putSubmission(sessionId: string, meta: SubmissionMeta, base64: string, expiresAt: number): Promise<void>;
   getImage(sessionId: string, id: string): Promise<string | null>;
   deleteSubmission(sessionId: string, id: string): Promise<void>;
+  /** Workshop types set by the super admin (kept permanently), or the defaults. */
+  getWorkshopTypes(): Promise<WorkshopType[]>;
+  setWorkshopTypes(types: WorkshopType[]): Promise<void>;
   /** Counts failed admin logins for `key` over a 15-minute window. */
   recordLoginFailure(key: string): Promise<number>;
   loginFailures(key: string): Promise<number>;
@@ -30,6 +33,7 @@ const K = {
   subs: (sid: string) => `hp:subs:${sid}`,
   img: (sid: string, id: string) => `hp:img:${sid}:${id}`,
   login: (key: string) => `hp:login:${key}`,
+  workshopTypes: 'hp:workshop-types',
 };
 const LOGIN_WINDOW_MS = 15 * 60_000;
 
@@ -92,6 +96,15 @@ class RedisStore implements Store {
     tx.hdel(K.subs(sessionId), id);
     tx.del(K.img(sessionId, id));
     await tx.exec();
+  }
+
+  async getWorkshopTypes() {
+    const raw = await this.redis.get<string>(K.workshopTypes);
+    return raw ? (JSON.parse(raw) as WorkshopType[]) : DEFAULT_WORKSHOP_TYPES;
+  }
+
+  async setWorkshopTypes(types: WorkshopType[]) {
+    await this.redis.set(K.workshopTypes, JSON.stringify(types));
   }
 
   async recordLoginFailure(key: string) {
@@ -160,6 +173,12 @@ class MemoryStore implements Store {
   async deleteSubmission(sid: string, id: string) {
     this.subs(sid)?.delete(id);
     this.data.delete(K.img(sid, id));
+  }
+  async getWorkshopTypes() {
+    return this.get<WorkshopType[]>(K.workshopTypes) ?? DEFAULT_WORKSHOP_TYPES;
+  }
+  async setWorkshopTypes(types: WorkshopType[]) {
+    this.set(K.workshopTypes, types, Infinity);
   }
   async recordLoginFailure(key: string) {
     const n = (this.get<number>(K.login(key)) ?? 0) + 1;

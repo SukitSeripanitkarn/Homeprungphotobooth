@@ -45,16 +45,27 @@ export async function readJson<T>(req: Request, maxBytes: number): Promise<T> {
 
 export class AdminNotConfiguredError extends Error {}
 
-/** Signing key derived from ADMIN_PASSWORD: changing the password logs everyone out. */
-function signingKey(): Buffer {
-  const password = process.env.ADMIN_PASSWORD;
+/** Two separate logins: admins run classes; the super admin edits workshop types. */
+export type Role = 'admin' | 'super';
+const ROLES = {
+  admin: { env: 'ADMIN_PASSWORD', cookie: 'hp_admin' },
+  super: { env: 'SUPERADMIN_PASSWORD', cookie: 'hp_super' },
+} as const;
+
+function rolePassword(role: Role): string {
+  const password = process.env[ROLES[role].env];
   if (!password) {
-    throw new AdminNotConfiguredError('ADMIN_PASSWORD is not set. Add it in Vercel → Settings → Environment Variables.');
+    throw new AdminNotConfiguredError(`${ROLES[role].env} is not set. Add it in Vercel → Settings → Environment Variables, then redeploy.`);
   }
-  return createHash('sha256').update(`homprung-photobooth:${password}`).digest();
+  return password;
 }
 
-export const sign = (value: string) => createHmac('sha256', signingKey()).update(value).digest('base64url');
+/** Signing key derived from the role's password: changing it logs that role out. */
+function signingKey(role: Role): Buffer {
+  return createHash('sha256').update(`homprung-photobooth:${role}:${rolePassword(role)}`).digest();
+}
+
+export const sign = (value: string, role: Role = 'admin') => createHmac('sha256', signingKey(role)).update(value).digest('base64url');
 
 function safeEqual(a: string, b: string) {
   const x = Buffer.from(a);
@@ -62,37 +73,37 @@ function safeEqual(a: string, b: string) {
   return x.length === y.length && timingSafeEqual(x, y);
 }
 
-export function checkPassword(candidate: string): boolean {
+export function checkPassword(candidate: string, role: Role = 'admin'): boolean {
   // Compare digests so the comparison is constant-time regardless of length.
-  const want = createHash('sha256').update(process.env.ADMIN_PASSWORD ?? '').digest('hex');
+  const want = createHash('sha256').update(rolePassword(role)).digest('hex');
   const got = createHash('sha256').update(candidate).digest('hex');
-  signingKey(); // throws if not configured
   return safeEqual(want, got);
 }
 
-export const ADMIN_COOKIE = 'hp_admin';
-const ADMIN_TTL_S = 12 * 60 * 60;
+const LOGIN_TTL_S = 12 * 60 * 60;
 
-export function adminCookie(req: Request): string {
-  const exp = Date.now() + ADMIN_TTL_S * 1000;
-  const token = `${exp}.${sign(`admin:${exp}`)}`;
+export function loginCookie(req: Request, role: Role): string {
+  const exp = Date.now() + LOGIN_TTL_S * 1000;
+  const token = `${exp}.${sign(`${role}:${exp}`, role)}`;
   const secure = new URL(req.url).protocol === 'https:' ? '; Secure' : '';
-  return `${ADMIN_COOKIE}=${token}; Path=/api; HttpOnly; SameSite=Strict; Max-Age=${ADMIN_TTL_S}${secure}`;
+  return `${ROLES[role].cookie}=${token}; Path=/api; HttpOnly; SameSite=Strict; Max-Age=${LOGIN_TTL_S}${secure}`;
 }
 
-export const clearAdminCookie = `${ADMIN_COOKIE}=; Path=/api; HttpOnly; SameSite=Strict; Max-Age=0`;
+export const logoutCookie = (role: Role) => `${ROLES[role].cookie}=; Path=/api; HttpOnly; SameSite=Strict; Max-Age=0`;
 
-export function isAdmin(req: Request): boolean {
-  const cookie = req.headers.get('cookie') ?? '';
-  const token = cookie
+export function hasRole(req: Request, role: Role): boolean {
+  const name = ROLES[role].cookie;
+  const token = (req.headers.get('cookie') ?? '')
     .split(/;\s*/)
-    .find((c) => c.startsWith(`${ADMIN_COOKIE}=`))
-    ?.slice(ADMIN_COOKIE.length + 1);
+    .find((c) => c.startsWith(`${name}=`))
+    ?.slice(name.length + 1);
   if (!token) return false;
   const [exp, sig] = token.split('.');
   if (!exp || !sig || Number(exp) < Date.now()) return false;
-  return safeEqual(sig, sign(`admin:${exp}`));
+  return safeEqual(sig, sign(`${role}:${exp}`, role));
 }
+
+export const isAdmin = (req: Request) => hasRole(req, 'admin');
 
 /** Lets a phone replace its own earlier photo without storing any secret. */
 export const submissionToken = (sessionId: string, id: string) => sign(`sub:${sessionId}:${id}`);

@@ -7,7 +7,7 @@ import { BrandLogo } from '../components/BrandLogo';
 import { PrefsToggles } from '../components/PrefsToggles';
 import { usePrefs } from '../lib/prefs';
 import { useAdminText } from './adminI18n';
-import { WORKSHOP_TYPES, workshopType, type WorkshopTypeId } from '../../api/_lib/classSession';
+import { DEFAULT_WORKSHOP_TYPES, findWorkshopType, sessionWorkshopType } from '../../api/_lib/classSession';
 import { formatCm } from '../config';
 import {
   ApiError,
@@ -243,7 +243,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
     if (session && !window.confirm(a.confirmRestart)) return;
     setBusy(true);
     try {
-      const res = await adminStartSession(workshop, settings.nextType);
+      const res = await adminStartSession(workshop, kind.id);
       setData(res);
       setClockOffset(res.now - Date.now());
     } finally {
@@ -289,7 +289,8 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
   };
 
   // ---- sheets: the class's workshop type fixes sticker size, margin and gap; bleed is always 0.
-  const kind = workshopType(session?.type ?? settings.nextType);
+  const workshopTypes = data?.workshopTypes ?? DEFAULT_WORKSHOP_TYPES;
+  const kind = session ? sessionWorkshopType(session.type) : findWorkshopType(workshopTypes, settings.nextType);
   const copiesOf = (id: string) => copies[id] ?? settings.copiesPerPerson;
   const kinds: PackKind[] = useMemo(
     () => [
@@ -407,14 +408,14 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
               </p>
               <fieldset className="type-picker">
                 <legend>{a.workshopType}</legend>
-                {WORKSHOP_TYPES.map((t) => (
-                  <label key={t.id} className={`type-picker__option${settings.nextType === t.id ? ' is-selected' : ''}`}>
+                {workshopTypes.map((t) => (
+                  <label key={t.id} className={`type-picker__option${kind.id === t.id ? ' is-selected' : ''}`}>
                     <input
                       type="radio"
                       name="workshop-type"
                       value={t.id}
-                      checked={settings.nextType === t.id}
-                      onChange={() => set('nextType', t.id as WorkshopTypeId)}
+                      checked={kind.id === t.id}
+                      onChange={() => set('nextType', t.id)}
                     />
                     <span className="type-picker__name">{t[a.lang]}</span>
                     <span className="type-picker__size">
@@ -500,7 +501,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
                   <span className="extra-list__label">{x.label}</span>
                   <label className="inline-field">
                     {a.size}
-                    <SizeSelect valueMm={x.diameterMm} onChange={(mm) => updateExtra(x.id, { diameterMm: mm })} />
+                    <SizeSelect valueMm={x.diameterMm} types={workshopTypes} onChange={(mm) => updateExtra(x.id, { diameterMm: mm })} />
                   </label>
                   <label className="inline-field">
                     ×
@@ -583,7 +584,13 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
       </div>
 
       {showEditor && (
-        <StickerEditorModal frames={frames} defaultDiameterMm={kind.diameterMm} onAdd={addExtra} onClose={() => setShowEditor(false)} />
+        <StickerEditorModal
+          frames={frames}
+          types={workshopTypes}
+          defaultDiameterMm={kind.diameterMm}
+          onAdd={addExtra}
+          onClose={() => setShowEditor(false)}
+        />
       )}
       {showQr && qr && session && (
         <div className="qr-full" role="dialog" aria-modal="true" onClick={() => setShowQr(false)}>

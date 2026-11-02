@@ -1,4 +1,4 @@
-import { workshopType, type PublicClassSession } from './_lib/classSession.js';
+import { sessionWorkshopType, type PublicClassSession } from './_lib/classSession.js';
 import { error, handler, json } from './_lib/http.js';
 import { getStore } from './_lib/store.js';
 
@@ -9,7 +9,7 @@ export const GET = handler(async (req) => {
   if (!session || session.code !== code) return error(404, 'No open class for this code', { code: 'no_session' });
   const body: PublicClassSession = {
     workshop: session.workshop,
-    type: workshopType(session.type).id,
+    type: sessionWorkshopType(session.type),
     expiresAt: session.expiresAt,
     now: Date.now(),
   };

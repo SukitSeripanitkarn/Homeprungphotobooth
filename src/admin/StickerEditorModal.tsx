@@ -10,18 +10,21 @@ import { DEFAULT_EDIT, type EditState, type FrameEntry, type Photo } from '../li
 import { NO_FRAME, useFrameState } from '../lib/useFrameState';
 import type { ExtraSticker } from './adminStore';
 import { SizeSelect } from './SizeSelect';
+import type { WorkshopType } from '../../api/_lib/classSession';
 import { useAdminText } from './adminI18n';
 
 interface Props {
   frames: FrameEntry[] | null;
   /** Size preselected for the new sticker: the current workshop type's. */
   defaultDiameterMm: number;
+  /** Workshop types; their sizes are the choices. */
+  types: readonly WorkshopType[];
   onAdd: (sticker: Omit<ExtraSticker, 'id' | 'createdAt'>) => Promise<void>;
   onClose: () => void;
 }
 
 /** Upload an image, place it (optionally in a frame) and add N copies to the sheets. */
-export function StickerEditorModal({ frames, defaultDiameterMm, onAdd, onClose }: Props) {
+export function StickerEditorModal({ frames, defaultDiameterMm, types, onAdd, onClose }: Props) {
   const a = useAdminText();
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [fileName, setFileName] = useState('');
@@ -118,7 +121,7 @@ export function StickerEditorModal({ frames, defaultDiameterMm, onAdd, onClose }
                 <div className="admin-form__row">
                   <label>
                     {a.sizeCm}
-                    <SizeSelect valueMm={diameter} onChange={setDiameter} />
+                    <SizeSelect valueMm={diameter} types={types} onChange={setDiameter} />
                   </label>
                   <label>
                     {a.copies}

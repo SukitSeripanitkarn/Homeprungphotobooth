@@ -1,5 +1,6 @@
 import type {
   AdminSessionResponse,
+  WorkshopType,
   PublicClassSession,
   SubmitRequest,
   SubmitResponse,
@@ -11,6 +12,8 @@ export class ApiError extends Error {
     public status: number,
     public code: string | undefined,
     message: string,
+    /** Extra fields from the error response (e.g. reason, row). */
+    public details: Record<string, unknown> = {},
   ) {
     super(message);
   }
@@ -30,7 +33,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(0, 'offline', 'Network error');
   }
   const data = (await res.json().catch(() => ({}))) as T & { error?: string; code?: string };
-  if (!res.ok) throw new ApiError(res.status, data.code, data.error ?? res.statusText);
+  if (!res.ok) throw new ApiError(res.status, data.code, data.error ?? res.statusText, data as Record<string, unknown>);
   return data;
 }
 
@@ -49,6 +52,7 @@ export const adminLogin = (password: string) =>
   request<{ admin: boolean }>('/api/admin/login', { method: 'POST', body: JSON.stringify({ password }) });
 export const adminLogout = () => request<{ admin: boolean }>('/api/admin/login', { method: 'DELETE' });
 export const adminGetSession = () => request<AdminSessionResponse>('/api/admin/session');
+/** `type` is a workshop type id. */
 export const adminStartSession = (workshop: string, type: string) =>
   request<AdminSessionResponse>('/api/admin/session', { method: 'POST', body: JSON.stringify({ workshop, type }) });
 export const adminEndSession = () => request<AdminSessionResponse>('/api/admin/session', { method: 'DELETE' });
@@ -72,3 +76,17 @@ export function canvasToJpegDataUrl(canvas: HTMLCanvasElement, quality = 0.9): s
   ctx.drawImage(canvas, 0, 0);
   return flat.toDataURL('image/jpeg', quality);
 }
+
+// ---- super admin
+
+export interface WorkshopTypesResponse {
+  workshopTypes: WorkshopType[];
+  defaults: WorkshopType[];
+}
+export const superStatus = () => request<{ super: boolean }>('/api/super/login');
+export const superLogin = (password: string) =>
+  request<{ super: boolean }>('/api/super/login', { method: 'POST', body: JSON.stringify({ password }) });
+export const superLogout = () => request<{ super: boolean }>('/api/super/login', { method: 'DELETE' });
+export const superGetWorkshops = () => request<WorkshopTypesResponse>('/api/super/workshops');
+export const superSaveWorkshops = (workshopTypes: WorkshopType[]) =>
+  request<WorkshopTypesResponse>('/api/super/workshops', { method: 'PUT', body: JSON.stringify({ workshopTypes }) });

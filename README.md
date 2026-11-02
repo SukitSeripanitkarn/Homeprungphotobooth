@@ -7,7 +7,7 @@ A photobooth for Baihor / Homprung workshops. Students scan the class QR code, p
 - **A class lasts 1 hour** from when the admin starts it. After that, every photo is deleted from the server automatically.
 - **Hosting:** Vite + React + TypeScript on Vercel, with a few Vercel Functions in `api/` and Upstash Redis for the photos of the running class.
 
-Target URL: `https://homprungphotobooth.vercel.app` (students) and `https://homprungphotobooth.vercel.app/admin` (admin).
+Target URL: `https://homprungphotobooth.vercel.app` (students), `/admin` (admins run classes) and `/superadmin` (super admin edits workshop types and print sizes).
 
 ---
 
@@ -15,6 +15,7 @@ Target URL: `https://homprungphotobooth.vercel.app` (students) and `https://homp
 
 1. **Storage:** in the Vercel project, open **Storage → Create Database → Upstash for Redis** (free plan), and connect it to this project. This adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` automatically.
 2. **Admin password:** open **Settings → Environment Variables**, add `ADMIN_PASSWORD` with a long password, and tick Production and Preview.
+   Also add `SUPERADMIN_PASSWORD`, a different password for the `/superadmin` page.
 3. **Redeploy** (Deployments → ⋯ → Redeploy) so the functions pick up the new settings.
 
 Without these, the admin page shows which setting is missing.
@@ -43,8 +44,14 @@ npm run build                     # typecheck + production build into dist/
 
 Only one class runs at a time; starting a new one ends the previous one.
 
-### Workshop types
-When starting a class, the admin picks the workshop type. It fixes the sticker size and sheet layout, and all three use the same 24 frames:
+### Workshop types (super admin)
+When starting a class, the admin picks the workshop type. It fixes the sticker size and sheet layout, and all types use the same 24 frames. The admin's only print choice is **A3 / A4**, and bleed is always 0.
+
+The **super admin** manages the types at **`/superadmin`**, which has its own password (`SUPERADMIN_PASSWORD`). An admin login can't open it.
+- **Edit types:** Thai and English name, sticker size, page margin and gap (in cm). Add, remove or reorder types.
+- **Live counts:** each type shows how many stickers fit per A3 and A4 sheet. It warns when a size is too big for A4.
+- **Validation:** the server checks every save. Names are required, sizes are 1–27 cm, margin 0–4 cm, gap 0–2 cm, and a sticker plus its margins must fit A3. Problems are reported in Thai or English.
+- **Storage:** the list is saved permanently in Redis. Until the first save, the defaults apply:
 
 | Type | Sticker | Per A3 sheet | Per A4 sheet |
 | --- | --- | --- | --- |
@@ -52,10 +59,8 @@ When starting a class, the admin picks the workshop type. It fixes the sticker s
 | ชาไทย (Thai tea) | 7.8 cm | 13 | 6 |
 | ยาดมยักษ์ (giant herbal inhaler) | 10.4 cm | 8 | 2 |
 
-Students see their class's size, and their sticker is made at that size. On the admin page:
-- The only print setting is **A3 / A4**.
-- Batch stickers choose one of the three sizes.
-- Margin (1.2 cm) and gap (0.3 cm) are fixed, and bleed is 0.
+- **Effect on classes:** a class keeps a copy of its type when it starts. Edits apply to classes started afterwards, and a running class keeps its size until it ends.
+- **Reset:** **คืนค่าเริ่มต้น** restores the three defaults.
 
 ### Language and light/dark mode
 - **Language:** both the student app and the admin page have a **TH/EN** switch. It's shared, so one choice applies to both. Strings live in `src/i18n.ts` (students) and `src/admin/adminI18n.ts` (admin).
@@ -70,7 +75,7 @@ Students see their class's size, and their sticker is made at that size. On the 
 - **Four layouts per sheet:** honeycomb or straight rows, running across or down the page. The fullest layout wins.
 - **Mixed sizes:** bigger stickers go first, and smaller ones search the whole sheet for gaps.
 - **Extra sheets** are added until every sticker is placed. Stickers bigger than the paper are reported, not dropped silently.
-- **Settings:** fixed per workshop type (`WORKSHOP_TYPES` in `api/_lib/classSession.ts`); the admin only picks A3 or A4. Bleed is always 0.
+- **Settings:** fixed per workshop type (set by the super admin on `/superadmin`); the admin only picks A3 or A4. Bleed is always 0.
 
 | With the fixed layout (1.2 cm margin, 0.3 cm gap) | Simple grid | This packing |
 | --- | --- | --- |
@@ -110,6 +115,8 @@ Fixed layout (all three workshop types): 1.2 cm margin (room for the cutter's re
 | `GET /api/session?code=` | students | Is this class open? (workshop name, end time) |
 | `POST /api/submit` | students | Send or replace a sticker |
 | `GET/POST/DELETE /api/admin/login` | admin | Status, log in, log out |
+| `GET/POST/DELETE /api/super/login` | super admin | Status, log in, log out (`SUPERADMIN_PASSWORD`) |
+| `GET/PUT /api/super/workshops` | super admin | Read / replace the workshop types (validated) |
 | `GET/POST/DELETE /api/admin/session` | admin | Current class and photo list, start a class, end it and delete everything |
 | `GET/DELETE /api/admin/photo?id=` | admin | One photo, remove one photo |
 
@@ -236,7 +243,7 @@ The asset paths are in `src/brand.ts`, and the files are in `public/brand/`. The
 4. "1 hour" means 60 minutes from when the admin starts the class (`CLASS_SESSION_MINUTES` in `api/_lib/classSession.ts`). The class closes and its photos are deleted then, so print or download the PDFs before it ends. An admin page already open keeps the downloaded photos in memory until it is closed.
 5. Frame files are square transparent PNGs designed for a circular crop.
 6. Sticker images use 600 DPI up to 1,200 px (`EXPORT_DPI`, `MAX_STICKER_PX` in `src/config.ts`). For 7.8 and 10.4 cm that gives ~390 and ~290 DPI, which keeps phone uploads small. Batch stickers stay in the admin's browser and use the full 600 DPI.
-7. Workshop types, sizes, margin and gap live in `WORKSHOP_TYPES` (`api/_lib/classSession.ts`). Frames are rendered from the vector artwork at 1,280 px (students) and 2,560 px (HD, batch stickers), so the frame is never the limit on print sharpness.
+7. Workshop types, sizes, margin and gap are edited on `/superadmin` (defaults: `DEFAULT_WORKSHOP_TYPES` in `api/_lib/classSession.ts`). Frames are rendered from the vector artwork at 1,280 px (students) and 2,560 px (HD, batch stickers), so the frame is never the limit on print sharpness.
 8. The admin page is in Thai only (staff-facing). The student app has Thai and English.
 9. The MicroCut software's exact import options weren't available to test. The PDF uses the common `CutContour` print-and-cut convention, with a DXF as a fallback. If the cutter needs more room for its marks, increase "ขอบกระดาษ".
 10. The UI spells the brand **Homprung / หอมปรุง**, and the Vercel project and domain are `homprungphotobooth` (the GitHub repository is still named `Homeprungphotobooth`, which doesn't affect the site).
@@ -279,7 +286,7 @@ Still to do after deploying:
 ## Project structure
 
 ```
-api/                 Vercel Functions (session, submit, admin/login, admin/session, admin/photo)
+api/                 Vercel Functions (session, submit, admin/*, super/login, super/workshops)
   _lib/              storage (Upstash Redis / in-memory), auth + HTTP helpers, and
                      classSession.ts: types/limits shared with src/ (must stay under api/:
                      Vercel only compiles TypeScript there)
@@ -289,7 +296,8 @@ public/
 scripts/
   prepare-frames.py  optional: resize/optimise new frames + thumbnails
 src/
-  admin/             admin page: class, photos, batch stickers, sheets, PDF/DXF export
+  admin/             admin page (class, photos, batch stickers, sheets, PDF/DXF export) and
+                     SuperAdminApp (/superadmin: workshop types and print sizes)
   components/        student screens: Landing, Editor, FramePicker, SendPanel, SentScreen, …
   lib/               pack.ts (sheet packing), compose.ts, exportPng.ts, session.ts, api.ts, …
   styles/            brand.css (CI variables), app.css

@@ -1,4 +1,4 @@
-import { DEFAULT_WORKSHOP_TYPE, workshopType, type WorkshopTypeId } from '../../api/_lib/classSession';
+import { DEFAULT_WORKSHOP_TYPES } from '../../api/_lib/classSession';
 import { DEFAULT_PAPER } from '../config';
 import type { PaperId } from '../lib/pack';
 
@@ -25,14 +25,14 @@ export interface ExtraSticker {
 export interface SheetSettings {
   paper: PaperId;
   copiesPerPerson: number;
-  /** Workshop type preselected when starting the next class. */
-  nextType: WorkshopTypeId;
+  /** Workshop type id preselected when starting the next class (falls back to the first type). */
+  nextType: string;
 }
 
 export const DEFAULT_SETTINGS: SheetSettings = {
   paper: DEFAULT_PAPER,
   copiesPerPerson: 1,
-  nextType: DEFAULT_WORKSHOP_TYPE,
+  nextType: DEFAULT_WORKSHOP_TYPES[0].id,
 };
 
 const SETTINGS_KEY = 'homprung-admin:settings';
@@ -60,7 +60,7 @@ export function loadSettings(): SheetSettings {
   return {
     paper: saved.paper === 'A4' ? 'A4' : DEFAULT_SETTINGS.paper,
     copiesPerPerson: typeof saved.copiesPerPerson === 'number' ? saved.copiesPerPerson : DEFAULT_SETTINGS.copiesPerPerson,
-    nextType: workshopType(saved.nextType).id,
+    nextType: typeof saved.nextType === 'string' ? saved.nextType : DEFAULT_SETTINGS.nextType,
   };
 }
 export const saveSettings = (s: SheetSettings) => writeJson(SETTINGS_KEY, s);

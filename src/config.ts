@@ -2,8 +2,8 @@
 export const SESSION_CHECK_INTERVAL_MS = 30_000;
 
 /**
- * Sticker sizes come from the workshop type (WORKSHOP_TYPES in
- * api/_lib/classSession.ts): 3.5 / 7.8 / 10.4 cm.
+ * Sticker sizes come from the class's workshop type, which the super admin
+ * edits on /superadmin (defaults: DEFAULT_WORKSHOP_TYPES in api/_lib/classSession.ts).
  */
 /** Target print resolution of a sticker image. */
 export const EXPORT_DPI = 600;

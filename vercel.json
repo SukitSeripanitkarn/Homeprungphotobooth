@@ -31,7 +31,7 @@
       ]
     },
     {
-      "source": "/admin",
+      "source": "/(admin|superadmin)",
       "headers": [
         {
           "key": "X-Robots-Tag",
@@ -47,6 +47,10 @@
   "rewrites": [
     {
       "source": "/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/superadmin",
       "destination": "/index.html"
     }
   ]

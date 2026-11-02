@@ -15,7 +15,7 @@ import { ApiError, canvasToJpegDataUrl, getClassSession, submitSticker } from '.
 import { loadStoredPhoto, preparePhoto } from './lib/exif';
 import { downloadBlob, exportFilename, exportPng, renderExportCanvas } from './lib/exportPng';
 import { stickerPx } from './config';
-import { workshopType, type WorkshopTypeId } from '../api/_lib/classSession';
+import { DEFAULT_WORKSHOP_TYPES, sessionWorkshopType, type WorkshopType } from '../api/_lib/classSession';
 import { loadFrameManifest } from './lib/frames';
 import { clearSession, isExpired, loadSession, savePhoto, saveState, type StateRecord } from './lib/session';
 import { DEFAULT_EDIT, type EditState, type FrameEntry, type Photo } from './lib/types';
@@ -25,8 +25,8 @@ import { usePrefs } from './lib/prefs';
 type Screen = 'boot' | 'noClass' | 'closed' | 'offline' | 'landing' | 'editor' | 'sent' | 'expired';
 
 interface ClassInfo {
-  /** Workshop type: fixes the sticker size. */
-  type: WorkshopTypeId;
+  /** Workshop type of the class: fixes the sticker size. */
+  type: WorkshopType;
   code: string;
   workshop: string;
   expiresAt: number;
@@ -74,7 +74,7 @@ export default function App() {
     let info: ClassInfo;
     try {
       const s = await getClassSession(code);
-      info = { code, workshop: s.workshop, type: workshopType(s.type).id, expiresAt: s.expiresAt, clockOffset: s.now - Date.now() };
+      info = { code, workshop: s.workshop, type: sessionWorkshopType(s.type), expiresAt: s.expiresAt, clockOffset: s.now - Date.now() };
     } catch (err) {
       const ended = err instanceof ApiError && err.code === 'no_session';
       if (ended) await clearSession();
@@ -184,7 +184,7 @@ export default function App() {
   );
 
   // The class's workshop type fixes the sticker size (3.5 / 7.8 / 10.4 cm).
-  const kind = workshopType(classInfo?.type);
+  const kind = classInfo?.type ?? DEFAULT_WORKSHOP_TYPES[0];
   const exportCanvas = () => (photo ? renderExportCanvas(photo, edit, frameImage, overlay, stickerPx(kind.diameterMm)) : null);
 
   const showPreview = (canvas: HTMLCanvasElement) =>
