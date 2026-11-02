@@ -2,7 +2,7 @@ import { useI18n } from '../i18n';
 
 /** Admin page strings (Thai / English). The language is shared with the student app. */
 const th = {
-  /** Selects the th/en name in WORKSHOP_TYPES. */
+  /** Selects the th/en name of a workshop type. */
   lang: 'th' as 'th' | 'en',
   title: 'แอดมิน · หอมปรุง Photobooth',
   logout: 'ออกจากระบบ',
