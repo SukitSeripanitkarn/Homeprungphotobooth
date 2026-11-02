@@ -13,7 +13,9 @@ import { SendPanel } from './components/SendPanel';
 import { SentScreen } from './components/SentScreen';
 import { ApiError, canvasToJpegDataUrl, getClassSession, submitSticker } from './lib/api';
 import { loadStoredPhoto, preparePhoto } from './lib/exif';
-import { downloadBlob, exportPng, renderExportCanvas } from './lib/exportPng';
+import { downloadBlob, exportFilename, exportPng, renderExportCanvas } from './lib/exportPng';
+import { stickerPx } from './config';
+import { workshopType, type WorkshopTypeId } from '../api/_lib/classSession';
 import { loadFrameManifest } from './lib/frames';
 import { clearSession, isExpired, loadSession, savePhoto, saveState, type StateRecord } from './lib/session';
 import { DEFAULT_EDIT, type EditState, type FrameEntry, type Photo } from './lib/types';
@@ -23,6 +25,8 @@ import { usePrefs } from './lib/prefs';
 type Screen = 'boot' | 'noClass' | 'closed' | 'offline' | 'landing' | 'editor' | 'sent' | 'expired';
 
 interface ClassInfo {
+  /** Workshop type: fixes the sticker size. */
+  type: WorkshopTypeId;
   code: string;
   workshop: string;
   expiresAt: number;
@@ -70,7 +74,7 @@ export default function App() {
     let info: ClassInfo;
     try {
       const s = await getClassSession(code);
-      info = { code, workshop: s.workshop, expiresAt: s.expiresAt, clockOffset: s.now - Date.now() };
+      info = { code, workshop: s.workshop, type: workshopType(s.type).id, expiresAt: s.expiresAt, clockOffset: s.now - Date.now() };
     } catch (err) {
       const ended = err instanceof ApiError && err.code === 'no_session';
       if (ended) await clearSession();
@@ -179,7 +183,9 @@ export default function App() {
     [classInfo, t],
   );
 
-  const exportCanvas = () => (photo ? renderExportCanvas(photo, edit, frameImage, overlay) : null);
+  // The class's workshop type fixes the sticker size (3.5 / 7.8 / 10.4 cm).
+  const kind = workshopType(classInfo?.type);
+  const exportCanvas = () => (photo ? renderExportCanvas(photo, edit, frameImage, overlay, stickerPx(kind.diameterMm)) : null);
 
   const showPreview = (canvas: HTMLCanvasElement) =>
     canvas.toBlob((b) =>
@@ -192,8 +198,8 @@ export default function App() {
   // After a refresh on the "sent" screen, rebuild its preview once the frame is ready.
   useEffect(() => {
     if (screen !== 'sent' || !photo || !frameReady || previewUrl) return;
-    showPreview(renderExportCanvas(photo, edit, frameImage, overlay));
-  }, [screen, photo, frameReady, previewUrl, edit, frameImage, overlay, fontEpoch]);
+    showPreview(renderExportCanvas(photo, edit, frameImage, overlay, stickerPx(kind.diameterMm)));
+  }, [screen, photo, frameReady, previewUrl, edit, frameImage, overlay, fontEpoch, kind]);
 
   const handleSend = async () => {
     const canvas = exportCanvas();
@@ -227,7 +233,7 @@ export default function App() {
   const handleDownload = async () => {
     if (!photo) return;
     try {
-      downloadBlob(await exportPng(photo, edit, frameImage, overlay));
+      downloadBlob(await exportPng(photo, edit, frameImage, overlay, kind.diameterMm), exportFilename(kind.diameterMm));
     } catch (err) {
       console.error(err);
       alert(t.exportError);
@@ -243,7 +249,7 @@ export default function App() {
   return (
     <I18nContext.Provider value={i18n}>
       <div className="app">
-        <Header workshop={classInfo?.workshop || null} />
+        <Header workshop={classInfo ? classInfo.workshop || kind[lang] : null} />
         {screen === 'boot' && <div className="screen" aria-busy="true" />}
         {screen === 'noClass' && <InfoScreen title={t.noClassTitle} text={t.noClassText} />}
         {screen === 'closed' && <InfoScreen title={t.closedTitle} text={t.closedText} />}
@@ -256,7 +262,14 @@ export default function App() {
           </InfoScreen>
         )}
         {screen === 'landing' && (
-          <Landing onFile={handleFile} busy={busy} error={error} heroUrl={frames?.[0]?.url ?? null} countdown={countdown} />
+          <Landing
+            onFile={handleFile}
+            busy={busy}
+            error={error}
+            heroUrl={frames?.[0]?.url ?? null}
+            countdown={countdown}
+            diameterMm={kind.diameterMm}
+          />
         )}
         {screen === 'editor' && photo && (
           <Editor

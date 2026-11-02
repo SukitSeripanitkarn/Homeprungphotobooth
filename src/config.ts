@@ -1,16 +1,25 @@
 /** How often the class-end check (and countdown) runs. The class length is CLASS_SESSION_MINUTES in api/_lib/classSession.ts. */
 export const SESSION_CHECK_INTERVAL_MS = 30_000;
 
-/** Physical print size of the circle. Everything below (export size, sheet text, filename) follows it. */
-export const PRINT_DIAMETER_MM = 35;
-/** Same size in centimetres for UI copy, e.g. "3.5". */
-export const PRINT_DIAMETER_CM = String(PRINT_DIAMETER_MM / 10);
-/** Export resolution. Change for a different print shop requirement. */
+/**
+ * Sticker sizes come from the workshop type (WORKSHOP_TYPES in
+ * api/_lib/classSession.ts): 3.5 / 7.8 / 10.4 cm.
+ */
+/** Target print resolution of a sticker image. */
 export const EXPORT_DPI = 600;
-/** Export width/height in px: 35 mm at 600 DPI = 827 px. (The frame artwork is drawn at 40 mm and scales down cleanly.) */
-export const EXPORT_PX = Math.round((PRINT_DIAMETER_MM / 25.4) * EXPORT_DPI);
-/** Pixels per metre written into the PNG pHYs chunk (EXPORT_PX / diameter). */
-export const EXPORT_PX_PER_METRE = Math.round(EXPORT_PX / (PRINT_DIAMETER_MM / 1000));
+/**
+ * Largest sticker image a phone uploads. 600 DPI would make a 10.4 cm sticker
+ * ~2,460 px (too big to upload and store reliably); 1,200 px still gives
+ * ~290–390 DPI for the big stickers. The frame artwork itself is 1,024 px.
+ */
+export const MAX_STICKER_PX = 1200;
+
+/** Pixel size of a sticker image of `diameterMm`, at EXPORT_DPI but no larger than `maxPx`. */
+export const stickerPx = (diameterMm: number, maxPx = MAX_STICKER_PX) =>
+  Math.min(maxPx, Math.round((diameterMm / 25.4) * EXPORT_DPI));
+
+/** "3.5" for 35 mm, "7.8" for 78 mm, "10.4" for 104 mm. */
+export const formatCm = (mm: number) => String(Math.round(mm * 100) / 1000);
 
 /** Photos larger than this (longest side) are downscaled before editing. */
 export const MAX_PHOTO_PX = 4000;
@@ -18,20 +27,8 @@ export const MAX_PHOTO_PX = 4000;
 export const ZOOM_MIN = 1;
 export const ZOOM_MAX = 5;
 
-/**
- * Admin sticker sheet defaults, chosen for the Epson L18050 (A3) + MicroCut
- * 30Q print-and-cut kit. All of them can be changed on the admin page.
- */
-export const SHEET_DEFAULTS = {
-  paper: 'A3',
-  /** Room around the edge for the cutter's registration marks. */
-  marginMm: 12,
-  /** Space between cut lines. Must be more than 2 × bleed. */
-  gapMm: 3,
-  /** Each image prints this much larger than its cut line, so a slightly off cut shows no white edge. */
-  bleedMm: 1,
-  copiesPerPerson: 1,
-} as const;
+/** Paper the admin page starts on (the Epson L18050 prints A3). */
+export const DEFAULT_PAPER = 'A3' as const;
 
 /**
  * Custom text band defaults, measured from the HOMPRUNG BY BAIHOR frames:

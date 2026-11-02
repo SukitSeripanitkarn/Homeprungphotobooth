@@ -7,7 +7,8 @@ import { BrandLogo } from '../components/BrandLogo';
 import { PrefsToggles } from '../components/PrefsToggles';
 import { usePrefs } from '../lib/prefs';
 import { useAdminText } from './adminI18n';
-import { CmInput } from './CmInput';
+import { WORKSHOP_TYPES, workshopType, type WorkshopTypeId } from '../../api/_lib/classSession';
+import { formatCm } from '../config';
 import {
   ApiError,
   adminDeletePhoto,
@@ -36,6 +37,7 @@ import {
   type SheetSettings,
 } from './adminStore';
 import { SheetSvg, renderSheetJpeg, sheetDxf, sheetPdf } from './sheets';
+import { SizeSelect } from './SizeSelect';
 import { StickerEditorModal } from './StickerEditorModal';
 import './admin.css';
 
@@ -241,7 +243,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
     if (session && !window.confirm(a.confirmRestart)) return;
     setBusy(true);
     try {
-      const res = await adminStartSession(workshop);
+      const res = await adminStartSession(workshop, settings.nextType);
       setData(res);
       setClockOffset(res.now - Date.now());
     } finally {
@@ -286,19 +288,20 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
     setExtras((xs) => xs.filter((x) => x.id !== id));
   };
 
-  // ---- sheets
+  // ---- sheets: the class's workshop type fixes sticker size, margin and gap; bleed is always 0.
+  const kind = workshopType(session?.type ?? settings.nextType);
   const copiesOf = (id: string) => copies[id] ?? settings.copiesPerPerson;
   const kinds: PackKind[] = useMemo(
     () => [
-      ...submissions.map((s) => ({ key: `s:${s.id}`, diameterMm: settings.classDiameterMm, count: copiesOf(s.id) })),
+      ...submissions.map((s) => ({ key: `s:${s.id}`, diameterMm: kind.diameterMm, count: copiesOf(s.id) })),
       ...extras.map((x) => ({ key: `x:${x.id}`, diameterMm: x.diameterMm, count: x.count })),
     ],
-    [submissions, extras, copies, settings], // eslint-disable-line react-hooks/exhaustive-deps
+    [submissions, extras, copies, settings, kind], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const paper = PAPERS[settings.paper];
   const packed = useMemo(
-    () => packStickers(kinds, { paper, marginMm: settings.marginMm, gapMm: settings.gapMm }),
-    [kinds, paper, settings.marginMm, settings.gapMm],
+    () => packStickers(kinds, { paper, marginMm: kind.marginMm, gapMm: kind.gapMm }),
+    [kinds, paper, kind],
   );
   const images = useMemo(() => {
     const m: Record<string, string> = {};
@@ -332,7 +335,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
     if (kind === 'dxf') return downloadBlob(new Blob([sheetDxf(sheet, paper)], { type: 'application/dxf' }), `${base}-cut.dxf`);
     setExporting(`${index}`);
     try {
-      const jpeg = await renderSheetJpeg(sheet, paper, sources(), settings.bleedMm);
+      const jpeg = await renderSheetJpeg(sheet, paper, sources(), 0);
       downloadBlob(sheetPdf(sheet, paper, jpeg), `${base}.pdf`);
     } finally {
       setExporting(null);
@@ -345,7 +348,6 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
   const serverNow = now + clockOffset;
   const left = session ? minutesLeft(session.expiresAt, serverNow) : 0;
   const set = <K extends keyof SheetSettings>(k: K, v: SheetSettings[K]) => setSettings((s) => ({ ...s, [k]: v }));
-  const bleedWarning = settings.gapMm < settings.bleedMm * 2;
 
   if (!data) {
     return loadError ? (
@@ -376,7 +378,10 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
                 </button>
               )}
               <div className="class-live__info">
-                {session.workshop && <p className="class-live__name">{session.workshop}</p>}
+                <p className="class-live__name">
+                  {kind[a.lang]} · {formatCm(kind.diameterMm)} {a.cm}
+                  {session.workshop && <span className="class-live__sub">{session.workshop}</span>}
+                </p>
                 <p className={`countdown${left <= 10 ? ' countdown--low' : ''}`}>{a.timeLeft(left)}</p>
                 <p>
                   {a.classCode} <strong className="class-live__code">{session.code}</strong>
@@ -400,6 +405,24 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
               <p className="muted">
                 {a.startHint}
               </p>
+              <fieldset className="type-picker">
+                <legend>{a.workshopType}</legend>
+                {WORKSHOP_TYPES.map((t) => (
+                  <label key={t.id} className={`type-picker__option${settings.nextType === t.id ? ' is-selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="workshop-type"
+                      value={t.id}
+                      checked={settings.nextType === t.id}
+                      onChange={() => set('nextType', t.id as WorkshopTypeId)}
+                    />
+                    <span className="type-picker__name">{t[a.lang]}</span>
+                    <span className="type-picker__size">
+                      {formatCm(t.diameterMm)} {a.cm}
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
               <label>
                 {a.workshopName}
                 <input className="text-input" value={workshop} maxLength={60} onChange={(e) => setWorkshop(e.target.value)} />
@@ -477,14 +500,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
                   <span className="extra-list__label">{x.label}</span>
                   <label className="inline-field">
                     {a.size}
-                    <CmInput
-                      className="text-input text-input--num"
-                      valueMm={x.diameterMm}
-                      minMm={10}
-                      maxMm={250}
-                      onChangeMm={(mm) => updateExtra(x.id, { diameterMm: mm })}
-                    />
-                    {a.cm}
+                    <SizeSelect valueMm={x.diameterMm} onChange={(mm) => updateExtra(x.id, { diameterMm: mm })} />
                   </label>
                   <label className="inline-field">
                     ×
@@ -520,16 +536,8 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
                 <option value="A4">{a.paperA4}</option>
               </select>
             </label>
-            <CmField label={a.classSize} valueMm={settings.classDiameterMm} minMm={10} maxMm={250} onChangeMm={(v) => set('classDiameterMm', v)} />
-            <CmField label={a.margin} valueMm={settings.marginMm} minMm={0} maxMm={40} onChangeMm={(v) => set('marginMm', v)} />
-            <CmField label={a.gap} valueMm={settings.gapMm} minMm={0} maxMm={20} stepCm={0.05} onChangeMm={(v) => set('gapMm', v)} />
-            <CmField label={a.bleed} valueMm={settings.bleedMm} minMm={0} maxMm={3} stepCm={0.05} onChangeMm={(v) => set('bleedMm', v)} />
-            <label className="checkbox">
-              <input type="checkbox" checked={settings.cutGuide} onChange={(e) => set('cutGuide', e.target.checked)} />
-              {a.cutGuide}
-            </label>
           </div>
-          {bleedWarning && <p className="alert">{a.bleedWarning}</p>}
+          <p className="field-hint">{a.fixedLayout(kind[a.lang], formatCm(kind.diameterMm), formatCm(kind.marginMm), formatCm(kind.gapMm))}</p>
           {packed.tooBig.length > 0 && <p className="alert">{a.tooBig}</p>}
 
           <p className="sheet-summary">
@@ -556,7 +564,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
           <div className="sheet-previews">
             {packed.sheets.map((sheet, i) => (
               <figure key={i} className="sheet-preview">
-                <SheetSvg sheet={sheet} paper={paper} images={images} bleedMm={settings.bleedMm} cutGuide className="sheet-preview__svg" />
+                <SheetSvg sheet={sheet} paper={paper} images={images} bleedMm={0} cutGuide className="sheet-preview__svg" />
                 <figcaption>
                   {a.sheetCaption(i + 1, sheet.length)}
                   <span className="sheet-preview__links">
@@ -574,28 +582,19 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
         </section>
       </div>
 
-      {showEditor && <StickerEditorModal frames={frames} onAdd={addExtra} onClose={() => setShowEditor(false)} />}
+      {showEditor && (
+        <StickerEditorModal frames={frames} defaultDiameterMm={kind.diameterMm} onAdd={addExtra} onClose={() => setShowEditor(false)} />
+      )}
       {showQr && qr && session && (
         <div className="qr-full" role="dialog" aria-modal="true" onClick={() => setShowQr(false)}>
           <img src={qr} alt="" />
           <p>{a.scanToSend}</p>
-          {session.workshop && <p className="qr-full__sub">{session.workshop}</p>}
+          <p className="qr-full__sub">{session.workshop || kind[a.lang]}</p>
           <p className="qr-full__sub">{a.tapToClose}</p>
         </div>
       )}
-      <PrintSheets sheets={packed.sheets} paper={paper} images={images} bleedMm={settings.bleedMm} cutGuide={settings.cutGuide} />
+      <PrintSheets sheets={packed.sheets} paper={paper} images={images} bleedMm={0} cutGuide={false} />
     </div>
-  );
-}
-
-/** Labelled length setting, entered in cm (stored in mm). */
-function CmField(props: { label: string } & Parameters<typeof CmInput>[0]) {
-  const { label, ...input } = props;
-  return (
-    <label>
-      {label}
-      <CmInput {...input} />
-    </label>
   );
 }
 

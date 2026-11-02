@@ -49,8 +49,8 @@ export const adminLogin = (password: string) =>
   request<{ admin: boolean }>('/api/admin/login', { method: 'POST', body: JSON.stringify({ password }) });
 export const adminLogout = () => request<{ admin: boolean }>('/api/admin/login', { method: 'DELETE' });
 export const adminGetSession = () => request<AdminSessionResponse>('/api/admin/session');
-export const adminStartSession = (workshop: string) =>
-  request<AdminSessionResponse>('/api/admin/session', { method: 'POST', body: JSON.stringify({ workshop }) });
+export const adminStartSession = (workshop: string, type: string) =>
+  request<AdminSessionResponse>('/api/admin/session', { method: 'POST', body: JSON.stringify({ workshop, type }) });
 export const adminEndSession = () => request<AdminSessionResponse>('/api/admin/session', { method: 'DELETE' });
 export const adminDeletePhoto = (id: string) =>
   request<{ ok: true }>(`/api/admin/photo?id=${encodeURIComponent(id)}`, { method: 'DELETE' });

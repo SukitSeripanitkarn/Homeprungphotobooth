@@ -1,4 +1,5 @@
-import { PRINT_DIAMETER_MM, SHEET_DEFAULTS } from '../config';
+import { DEFAULT_WORKSHOP_TYPE, workshopType, type WorkshopTypeId } from '../../api/_lib/classSession';
+import { DEFAULT_PAPER } from '../config';
 import type { PaperId } from '../lib/pack';
 
 /**
@@ -17,29 +18,21 @@ export interface ExtraSticker {
   createdAt: number;
 }
 
+/**
+ * The only printing choices the admin makes. Sticker size, margin and gap
+ * come from the class's workshop type; bleed is always 0.
+ */
 export interface SheetSettings {
   paper: PaperId;
-  marginMm: number;
-  gapMm: number;
-  bleedMm: number;
-  /** Size of the students' stickers. */
-  classDiameterMm: number;
   copiesPerPerson: number;
-  /** Draw a thin cut line when printing from the browser (for scissors). */
-  cutGuide: boolean;
-  /** Bumped when a default changes, so saved settings can be migrated once. */
-  version?: number;
+  /** Workshop type preselected when starting the next class. */
+  nextType: WorkshopTypeId;
 }
 
 export const DEFAULT_SETTINGS: SheetSettings = {
-  paper: SHEET_DEFAULTS.paper,
-  marginMm: SHEET_DEFAULTS.marginMm,
-  gapMm: SHEET_DEFAULTS.gapMm,
-  bleedMm: SHEET_DEFAULTS.bleedMm,
-  classDiameterMm: PRINT_DIAMETER_MM,
-  copiesPerPerson: SHEET_DEFAULTS.copiesPerPerson,
-  cutGuide: false,
-  version: 3,
+  paper: DEFAULT_PAPER,
+  copiesPerPerson: 1,
+  nextType: DEFAULT_WORKSHOP_TYPE,
 };
 
 const SETTINGS_KEY = 'homprung-admin:settings';
@@ -62,13 +55,13 @@ function writeJson(key: string, value: unknown) {
 }
 
 export function loadSettings(): SheetSettings {
-  // Check the version that was saved, not the merged-in default's.
+  // Older saved settings also held size/margin/gap/bleed; only these survive.
   const saved = readJson<Partial<SheetSettings>>(SETTINGS_KEY, {});
-  const s = { ...DEFAULT_SETTINGS, ...saved };
-  // v3: the default student sticker is 35 mm again (v2 briefly made it 40 mm).
-  // Move admins still on the 40 mm default; keep sizes they chose themselves.
-  if ((saved.version ?? 1) === 2 && saved.classDiameterMm === 40) s.classDiameterMm = PRINT_DIAMETER_MM;
-  return { ...s, version: DEFAULT_SETTINGS.version };
+  return {
+    paper: saved.paper === 'A4' ? 'A4' : DEFAULT_SETTINGS.paper,
+    copiesPerPerson: typeof saved.copiesPerPerson === 'number' ? saved.copiesPerPerson : DEFAULT_SETTINGS.copiesPerPerson,
+    nextType: workshopType(saved.nextType).id,
+  };
 }
 export const saveSettings = (s: SheetSettings) => writeJson(SETTINGS_KEY, s);
 export const loadCopies = (sessionId: string) => readJson<Record<string, number>>(copiesKey(sessionId), {});

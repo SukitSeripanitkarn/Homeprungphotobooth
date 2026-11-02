@@ -3,23 +3,25 @@ import { Editor } from '../components/Editor';
 import { FramePicker } from '../components/FramePicker';
 import { FrameTextInput } from '../components/FrameTextInput';
 import { PhotoInput } from '../components/PhotoInput';
-import { EXPORT_DPI, PRINT_DIAMETER_MM } from '../config';
+import { stickerPx } from '../config';
 import { preparePhoto } from '../lib/exif';
 import { renderExportCanvas } from '../lib/exportPng';
 import { DEFAULT_EDIT, type EditState, type FrameEntry, type Photo } from '../lib/types';
 import { NO_FRAME, useFrameState } from '../lib/useFrameState';
 import type { ExtraSticker } from './adminStore';
-import { CmInput } from './CmInput';
+import { SizeSelect } from './SizeSelect';
 import { useAdminText } from './adminI18n';
 
 interface Props {
   frames: FrameEntry[] | null;
+  /** Size preselected for the new sticker: the current workshop type's. */
+  defaultDiameterMm: number;
   onAdd: (sticker: Omit<ExtraSticker, 'id' | 'createdAt'>) => Promise<void>;
   onClose: () => void;
 }
 
 /** Upload an image, place it (optionally in a frame) and add N copies to the sheets. */
-export function StickerEditorModal({ frames, onAdd, onClose }: Props) {
+export function StickerEditorModal({ frames, defaultDiameterMm, onAdd, onClose }: Props) {
   const a = useAdminText();
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [fileName, setFileName] = useState('');
@@ -27,7 +29,7 @@ export function StickerEditorModal({ frames, onAdd, onClose }: Props) {
   const [frameId, setFrameId] = useState<string | null>(NO_FRAME);
   const [frameText, setFrameText] = useState('');
   const [label, setLabel] = useState('');
-  const [diameter, setDiameter] = useState(PRINT_DIAMETER_MM);
+  const [diameter, setDiameter] = useState(defaultDiameterMm);
   const [count, setCount] = useState(40);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,8 +54,8 @@ export function StickerEditorModal({ frames, onAdd, onClose }: Props) {
     if (!photo) return;
     setBusy(true);
     try {
-      // Same 600 DPI as student stickers, at this sticker's size.
-      const px = Math.min(2400, Math.round((diameter / 25.4) * EXPORT_DPI));
+      // Kept in this browser only (never uploaded), so it can use the full 600 DPI.
+      const px = stickerPx(diameter, 2600);
       const canvas = renderExportCanvas(photo, edit, frameImage, overlay, px);
       const blob = await new Promise<Blob>((resolve, reject) =>
         canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png'),
@@ -115,7 +117,7 @@ export function StickerEditorModal({ frames, onAdd, onClose }: Props) {
                 <div className="admin-form__row">
                   <label>
                     {a.sizeCm}
-                    <CmInput valueMm={diameter} minMm={10} maxMm={250} onChangeMm={setDiameter} />
+                    <SizeSelect valueMm={diameter} onChange={setDiameter} />
                   </label>
                   <label>
                     {a.copies}

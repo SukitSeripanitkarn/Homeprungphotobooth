@@ -2,6 +2,8 @@ import { useI18n } from '../i18n';
 
 /** Admin page strings (Thai / English). The language is shared with the student app. */
 const th = {
+  /** Selects the th/en name in WORKSHOP_TYPES. */
+  lang: 'th' as 'th' | 'en',
   title: 'แอดมิน · หอมปรุง Photobooth',
   logout: 'ออกจากระบบ',
   // login
@@ -28,6 +30,7 @@ const th = {
   showQr: 'แสดง QR เต็มจอ',
   endClass: 'จบรอบและลบรูป',
   startHint: 'กดเริ่มรอบเพื่อเปิดรับรูปจากผู้เรียน รอบหนึ่งมีเวลา 1 ชั่วโมง หลังจากนั้นรูปทั้งหมดจะถูกลบอัตโนมัติ',
+  workshopType: 'ประเภทเวิร์กช็อป',
   workshopName: 'ชื่อเวิร์กช็อป (ไม่บังคับ)',
   startClass: 'เริ่มรอบใหม่ (1 ชั่วโมง)',
   confirmRestart: 'เริ่มรอบใหม่? รูปทั้งหมดของรอบปัจจุบันจะถูกลบ',
@@ -54,13 +57,9 @@ const th = {
   paper: 'กระดาษ',
   paperA3: 'A3 (29.7 × 42 ซม.)',
   paperA4: 'A4 (21 × 29.7 ซม.)',
-  classSize: 'ขนาดสติกเกอร์ผู้เรียน (ซม.)',
-  margin: 'ขอบกระดาษ (ซม.)',
-  gap: 'ระยะห่างระหว่างดวง (ซม.)',
-  bleed: 'เผื่อตัด / bleed (ซม.)',
-  cutGuide: 'พิมพ์เส้นตัดสีเทา (สำหรับตัดด้วยกรรไกร)',
-  bleedWarning: 'ระยะห่างควรมากกว่า 2 × bleed ไม่เช่นนั้นภาพของดวงข้างเคียงจะซ้อนกัน',
   tooBig: 'มีสติกเกอร์ที่ใหญ่เกินกระดาษ จึงไม่ได้ใส่ในแผ่น',
+  fixedLayout: (type: string, size: string, margin: string, gap: string) =>
+    `${type}: สติกเกอร์ ${size} ซม. · ขอบกระดาษ ${margin} ซม. · ระยะห่าง ${gap} ซม. (กำหนดตามประเภทเวิร์กช็อป ไม่เผื่อตัด)`,
   summary: (stickers: number, sheets: number, paper: string) => `${stickers} ดวง · ${sheets} แผ่น ${paper}`,
   printAll: '🖨 พิมพ์ทุกแผ่น',
   pdfAll: '⬇ PDF ทุกแผ่น (สำหรับเครื่องตัด)',
@@ -88,7 +87,7 @@ const th = {
   saveError: 'บันทึกไม่สำเร็จ ลองอีกครั้ง',
   changeImage: '🖼 เปลี่ยนรูป',
   stickerLabel: 'ชื่อเรียก',
-  sizeCm: 'ขนาด (ซม.)',
+  sizeCm: 'ขนาด',
   defaultLabel: 'สติกเกอร์',
   saving: 'กำลังบันทึก…',
   addCount: (n: number) => `เพิ่ม ${n} ดวงลงแผ่นสติกเกอร์`,
@@ -97,6 +96,7 @@ const th = {
 type AdminStrings = typeof th;
 
 const en: AdminStrings = {
+  lang: 'en',
   title: 'Admin · Homprung Photobooth',
   logout: 'Log out',
   loginTitle: 'Admin login',
@@ -120,6 +120,7 @@ const en: AdminStrings = {
   showQr: 'Show QR full screen',
   endClass: 'End class & delete photos',
   startHint: 'Start a class to accept photos from students. A class lasts 1 hour, then every photo is deleted automatically.',
+  workshopType: 'Workshop type',
   workshopName: 'Workshop name (optional)',
   startClass: 'Start new class (1 hour)',
   confirmRestart: "Start a new class? All photos from the current class will be deleted.",
@@ -143,13 +144,9 @@ const en: AdminStrings = {
   paper: 'Paper',
   paperA3: 'A3 (29.7 × 42 cm)',
   paperA4: 'A4 (21 × 29.7 cm)',
-  classSize: 'Student sticker size (cm)',
-  margin: 'Page margin (cm)',
-  gap: 'Gap between stickers (cm)',
-  bleed: 'Bleed (cm)',
-  cutGuide: 'Print grey cut lines (for cutting with scissors)',
-  bleedWarning: 'The gap should be more than 2 × bleed, or neighbouring images will overlap.',
   tooBig: "Some stickers are bigger than the paper, so they weren't placed.",
+  fixedLayout: (type: string, size: string, margin: string, gap: string) =>
+    `${type}: ${size} cm stickers · ${margin} cm page margin · ${gap} cm gap (fixed by the workshop type, no bleed)`,
   summary: (stickers: number, sheets: number, paper: string) =>
     `${stickers} sticker${stickers === 1 ? '' : 's'} · ${sheets} ${paper} sheet${sheets === 1 ? '' : 's'}`,
   printAll: '🖨 Print all sheets',
@@ -176,7 +173,7 @@ const en: AdminStrings = {
   saveError: "Couldn't save. Please try again.",
   changeImage: '🖼 Change image',
   stickerLabel: 'Label',
-  sizeCm: 'Size (cm)',
+  sizeCm: 'Size',
   defaultLabel: 'Sticker',
   saving: 'Saving…',
   addCount: (n: number) => `Add ${n} to the sticker sheets`,

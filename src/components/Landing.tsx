@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { PRINT_DIAMETER_CM } from '../config';
+import { formatCm } from '../config';
 import { useI18n } from '../i18n';
 import { PhotoInput } from './PhotoInput';
 
@@ -10,16 +10,18 @@ interface Props {
   /** A frame image to preview the result on the landing page. */
   heroUrl: string | null;
   countdown?: ReactNode;
+  /** Sticker size of this class's workshop type. */
+  diameterMm: number;
 }
 
-export function Landing({ onFile, busy, error, heroUrl, countdown }: Props) {
+export function Landing({ onFile, busy, error, heroUrl, countdown, diameterMm }: Props) {
   const { t } = useI18n();
   return (
     <main className="screen landing">
       {countdown}
       <div className="landing__hero" aria-hidden="true">
         {heroUrl && <img src={heroUrl} alt="" width={200} height={200} fetchPriority="high" />}
-        <span>{PRINT_DIAMETER_CM} cm</span>
+        <span>{formatCm(diameterMm)} cm</span>
       </div>
       <h1 className="landing__title">{t.appName}</h1>
       <p className="landing__tagline">{t.tagline}</p>

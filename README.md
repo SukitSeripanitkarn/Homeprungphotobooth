@@ -1,6 +1,6 @@
 # Homprung Photobooth (หอมปรุง Photobooth)
 
-A photobooth for Baihor / Homprung workshops. Students scan the class QR code, pick or take a photo, and place it in a round brand frame on their phone. Then they **send it to the admin**. The admin collects the whole class, adds any batch stickers, and prints everything on **A3 or A4 sticker sheets** packed as tightly as possible. Default sticker size: **3.5 cm** (35 mm). The admin page shows and takes all sizes in **cm**; the app works in mm internally.
+A photobooth for Baihor / Homprung workshops. Students scan the class QR code, pick or take a photo, and place it in a round brand frame on their phone. Then they **send it to the admin**. The admin collects the whole class, adds any batch stickers, and prints everything on **A3 or A4 sticker sheets** packed as tightly as possible. Sticker size depends on the **workshop type** the admin picks when starting a class: **ยาดมสมุนไพร 3.5 cm, ชาไทย 7.8 cm, ยาดมยักษ์ 10.4 cm** (same frames for all). The only printing choice is **A3 or A4**.
 
 - **Students** need no account. The QR link carries the class code.
 - **The admin page** (`/admin`) is protected by a password.
@@ -43,6 +43,20 @@ npm run build                     # typecheck + production build into dist/
 
 Only one class runs at a time; starting a new one ends the previous one.
 
+### Workshop types
+When starting a class, the admin picks the workshop type. It fixes the sticker size and sheet layout, and all three use the same 24 frames:
+
+| Type | Sticker | Per A3 sheet | Per A4 sheet |
+| --- | --- | --- | --- |
+| ยาดมสมุนไพร (herbal inhaler) | 3.5 cm | 80 | 33 |
+| ชาไทย (Thai tea) | 7.8 cm | 13 | 6 |
+| ยาดมยักษ์ (giant herbal inhaler) | 10.4 cm | 8 | 2 |
+
+Students see their class's size, and their sticker is made at that size. On the admin page:
+- The only print setting is **A3 / A4**.
+- Batch stickers choose one of the three sizes.
+- Margin (1.2 cm) and gap (0.3 cm) are fixed, and bleed is 0.
+
 ### Language and light/dark mode
 - **Language:** both the student app and the admin page have a **TH/EN** switch. It's shared, so one choice applies to both. Strings live in `src/i18n.ts` (students) and `src/admin/adminI18n.ts` (admin).
 - **Theme:** the app starts in **light mode** on every device. The **☾/☀** button switches to dark and back.
@@ -56,27 +70,27 @@ Only one class runs at a time; starting a new one ends the previous one.
 - **Four layouts per sheet:** honeycomb or straight rows, running across or down the page. The fullest layout wins.
 - **Mixed sizes:** bigger stickers go first, and smaller ones search the whole sheet for gaps.
 - **Extra sheets** are added until every sticker is placed. Stickers bigger than the paper are reported, not dropped silently.
-- **Settings:** margin, gap and bleed are adjustable on the admin page.
+- **Settings:** fixed per workshop type (`WORKSHOP_TYPES` in `api/_lib/classSession.ts`); the admin only picks A3 or A4. Bleed is always 0.
 
-| 3.5 cm stickers | Simple grid | This packing |
+| With the fixed layout (1.2 cm margin, 0.3 cm gap) | Simple grid | This packing |
 | --- | --- | --- |
-| A4, 0.5 cm margin, 0.2 cm gap | 35 | **42** |
-| A3, 0.5 cm margin, 0.2 cm gap | 77 | **84** |
-| A3, cutter defaults (1.2 cm margin, 0.3 cm gap) | 70 | **80** |
+| 3.5 cm on A3 / A4 | 70 / 28 | **80 / 33** |
+| 7.8 cm on A3 / A4 | 12 / 6 | **13 / 6** |
+| 10.4 cm on A3 / A4 | 6 / 2 | **8 / 2** |
 
 ### Printing and cutting (Epson L18050 + MicroCut 30Q)
-Defaults: **A3**, 1.2 cm margin (room for the cutter's registration marks), 0.3 cm gap, and 0.1 cm bleed (each image prints 1 mm larger than its cut line, so a slightly off cut shows no white edge).
+Fixed layout (all three workshop types): 1.2 cm margin (room for the cutter's registration marks), 0.3 cm gap, **no bleed** (cut exactly on the artwork edge). Paper defaults to **A3**.
 
 - **PDF ทุกแผ่น / PDF:** one PDF per sheet.
   - **Print layer:** the sheet as a 360 DPI image (the Epson's native resolution).
   - **Cut layer:** each cut circle as a vector path in the **`CutContour`** spot colour (0.25 pt, 100% magenta). It's on a PDF layer marked "don't print", so an ordinary print won't show it.
   - **To use it:** open the PDF in the MicroCut software, add registration marks, print from there, then cut along `CutContour`.
 - **DXF:** cut circles only, at exactly the same positions in mm, for cutter software that prefers DXF.
-- **พิมพ์ทุกแผ่น:** prints straight from the browser at true size, one sheet per page. Set Scale to 100%. **พิมพ์เส้นตัดสีเทา** adds thin grey guides for cutting by hand.
+- **พิมพ์ทุกแผ่น:** prints straight from the browser at true size, one sheet per page. Set Scale to 100%.
 
 ### Photo handling
 - EXIF orientation is applied when the photo is decoded (`src/lib/exif.ts`). Photos longer than 4000 px are downscaled first.
-- The phone renders the finished sticker (827 × 827 px, 600 DPI at 3.5 cm) and sends it as a JPEG (~150–300 KB). The admin side clips it to the circle.
+- The phone renders the finished sticker at the class's size (600 DPI, capped at 1,200 px: 827 px for 3.5 cm, 1,200 px for 7.8 and 10.4 cm) and sends it as a JPEG (~150–500 KB). The admin side clips it to the circle.
 - The phone keeps its work in IndexedDB until the class ends, so a refresh doesn't lose it.
 - **บันทึกรูปลงเครื่อง** still saves a PNG with 600 DPI metadata to the student's own phone.
 
@@ -215,8 +229,8 @@ The asset paths are in `src/brand.ts`, and the files are in `public/brand/`. The
 3. The frame names in `frames.json` are descriptive Thai colour names I chose ("· ยาดม" marks the "Your Own Herbal Inhaler" versions). Rename them freely.
 4. "1 hour" means 60 minutes from when the admin starts the class (`CLASS_SESSION_MINUTES` in `api/_lib/classSession.ts`). The class closes and its photos are deleted then, so print or download the PDFs before it ends. An admin page already open keeps the downloaded photos in memory until it is closed.
 5. Frame files are square transparent PNGs designed for a circular crop.
-6. Students' stickers are rendered at 3.5 cm / 600 DPI (827 px; `PRINT_DIAMETER_MM` and `EXPORT_DPI` in `src/config.ts`). The admin can print them at another size (the "ขนาดสติกเกอร์ผู้เรียน" setting). Sheet defaults (A3, 12 mm margin, 3 mm gap, 1 mm bleed) are `SHEET_DEFAULTS` in the same file.
-7. The default sticker size is **3.5 cm**. The frame artwork (`sticker.ai`) is drawn at 4 cm and scales down cleanly. Admins can print a class at another size with "ขนาดสติกเกอร์ผู้เรียน (ซม.)".
+6. Sticker images use 600 DPI up to 1,200 px (`EXPORT_DPI`, `MAX_STICKER_PX` in `src/config.ts`). For 7.8 and 10.4 cm that gives ~390 and ~290 DPI, which keeps phone uploads small. Batch stickers stay in the admin's browser and use the full 600 DPI.
+7. Workshop types, sizes, margin and gap live in `WORKSHOP_TYPES` (`api/_lib/classSession.ts`). The frame artwork is 1,024 px (drawn at 4 cm), so for the 10.4 cm sticker it prints at ~250 DPI. If it needs to be sharper, re-render the frames from `sticker.ai` at a higher resolution.
 8. The admin page is in Thai only (staff-facing). The student app has Thai and English.
 9. The MicroCut software's exact import options weren't available to test. The PDF uses the common `CutContour` print-and-cut convention, with a DXF as a fallback. If the cutter needs more room for its marks, increase "ขอบกระดาษ".
 10. The UI spells the brand **Homprung / หอมปรุง**, and the Vercel project and domain are `homprungphotobooth` (the GitHub repository is still named `Homeprungphotobooth`, which doesn't affect the site).

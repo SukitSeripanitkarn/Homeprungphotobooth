@@ -1,4 +1,4 @@
-import { EXPORT_PX, EXPORT_PX_PER_METRE, PRINT_DIAMETER_MM } from '../config';
+import { stickerPx } from '../config';
 import type { FrameOverlay } from './arcText';
 import { compose } from './compose';
 import type { EditState, Photo } from './types';
@@ -59,13 +59,13 @@ function physChunk(ppm: number): Uint8Array {
   return chunk;
 }
 
-/** Renders the final square (EXPORT_PX by default) with a circular alpha mask. */
+/** Renders the final `px`-square sticker with a circular alpha mask. */
 export function renderExportCanvas(
   photo: Photo,
   edit: EditState,
   frame: HTMLImageElement | null,
-  overlay: FrameOverlay | null = null,
-  px = EXPORT_PX,
+  overlay: FrameOverlay | null,
+  px: number,
 ) {
   const canvas = document.createElement('canvas');
   canvas.width = px;
@@ -76,24 +76,29 @@ export function renderExportCanvas(
   return canvas;
 }
 
-/** Final print PNG: EXPORT_PX², transparent corners, ≈600 DPI pHYs metadata. */
+/**
+ * Final PNG for a sticker of `diameterMm`: transparent corners, and pHYs
+ * metadata so it opens at its physical size.
+ */
 export async function exportPng(
   photo: Photo,
   edit: EditState,
   frame: HTMLImageElement | null,
-  overlay: FrameOverlay | null = null,
+  overlay: FrameOverlay | null,
+  diameterMm: number,
 ): Promise<Blob> {
-  const canvas = renderExportCanvas(photo, edit, frame, overlay);
+  const px = stickerPx(diameterMm);
+  const canvas = renderExportCanvas(photo, edit, frame, overlay, px);
   const raw = await new Promise<Blob>((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png'),
   );
-  const bytes = setPngDpi(new Uint8Array(await raw.arrayBuffer()), EXPORT_PX_PER_METRE);
+  const bytes = setPngDpi(new Uint8Array(await raw.arrayBuffer()), Math.round(px / (diameterMm / 1000)));
   return new Blob([bytes as BlobPart], { type: 'image/png' });
 }
 
-export const EXPORT_FILENAME = `homprung-photobooth-${PRINT_DIAMETER_MM}mm.png`;
+export const exportFilename = (diameterMm: number) => `homprung-photobooth-${diameterMm}mm.png`;
 
-export function downloadBlob(blob: Blob, filename = EXPORT_FILENAME) {
+export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
