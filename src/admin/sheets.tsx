@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { setPngDpi } from '../lib/exportPng';
 import type { PaperSize, Placement } from '../lib/pack';
 
 /**
@@ -69,24 +70,26 @@ const n = (v: number) => Number(v.toFixed(3));
 export const SHEET_RASTER_DPI = 360;
 
 /**
- * Renders one sheet as a JPEG at SHEET_RASTER_DPI: every sticker clipped to
- * its circle (with bleed) on white. White prints as no ink on sticker paper.
+ * Draws one sheet at SHEET_RASTER_DPI: every sticker clipped to its circle
+ * (with bleed). `background` fills the paper (white for the PDF/JPEG);
+ * without it the paper stays transparent (PNG).
  */
-export async function renderSheetJpeg(
+async function drawSheet(
   sheet: Placement[],
   paper: PaperSize,
   sources: Record<string, Blob>,
   bleedMm: number,
-): Promise<{ bytes: Uint8Array; width: number; height: number }> {
+  background: string | null,
+): Promise<HTMLCanvasElement> {
   const scale = SHEET_RASTER_DPI / 25.4;
-  const width = Math.round(paper.widthMm * scale);
-  const height = Math.round(paper.heightMm * scale);
   const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = Math.round(paper.widthMm * scale);
+  canvas.height = Math.round(paper.heightMm * scale);
   const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, width, height);
+  if (background) {
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
   ctx.imageSmoothingQuality = 'high';
 
   const bitmaps = new Map<string, ImageBitmap>();
@@ -113,11 +116,44 @@ export async function renderSheetJpeg(
   } finally {
     bitmaps.forEach((b) => b.close());
   }
-  const blob = await new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/jpeg', 0.92),
+  return canvas;
+}
+
+const canvasBlob = (canvas: HTMLCanvasElement, type: string, quality?: number) =>
+  new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), type, quality),
   );
+
+/** One sheet as a JPEG on white (for the PDF). White prints as no ink on sticker paper. */
+export async function renderSheetJpeg(
+  sheet: Placement[],
+  paper: PaperSize,
+  sources: Record<string, Blob>,
+  bleedMm: number,
+): Promise<{ bytes: Uint8Array; width: number; height: number }> {
+  const canvas = await drawSheet(sheet, paper, sources, bleedMm, '#fff');
+  const { width, height } = canvas;
+  const blob = await canvasBlob(canvas, 'image/jpeg', 0.92);
   canvas.width = canvas.height = 0; // free the large canvas now
   return { bytes: new Uint8Array(await blob.arrayBuffer()), width, height };
+}
+
+/**
+ * One sheet as a PNG: transparent paper (only the stickers are opaque) and
+ * 360 DPI pHYs metadata, so it opens at true A3/A4 size in design and
+ * cutter software. It has no cut lines; use the DXF or PDF for those.
+ */
+export async function renderSheetPng(
+  sheet: Placement[],
+  paper: PaperSize,
+  sources: Record<string, Blob>,
+  bleedMm: number,
+): Promise<Blob> {
+  const canvas = await drawSheet(sheet, paper, sources, bleedMm, null);
+  const blob = await canvasBlob(canvas, 'image/png');
+  canvas.width = canvas.height = 0;
+  const bytes = setPngDpi(new Uint8Array(await blob.arrayBuffer()), Math.round(SHEET_RASTER_DPI / 0.0254));
+  return new Blob([bytes as BlobPart], { type: 'image/png' });
 }
 
 /**

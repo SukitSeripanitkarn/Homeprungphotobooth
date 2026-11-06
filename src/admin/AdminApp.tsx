@@ -36,7 +36,7 @@ import {
   type ExtraSticker,
   type SheetSettings,
 } from './adminStore';
-import { SheetSvg, renderSheetJpeg, sheetDxf, sheetPdf } from './sheets';
+import { SheetSvg, renderSheetJpeg, renderSheetPng, sheetDxf, sheetPdf } from './sheets';
 import { SizeSelect } from './SizeSelect';
 import { StickerEditorModal } from './StickerEditorModal';
 import './admin.css';
@@ -330,20 +330,24 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
     window.print();
   };
 
-  const download = async (index: number, kind: 'pdf' | 'dxf') => {
+  const download = async (index: number, kind: 'pdf' | 'png' | 'dxf') => {
     const sheet = packed.sheets[index];
     const base = `homprung-${settings.paper}-sheet-${index + 1}-of-${packed.sheets.length}`;
     if (kind === 'dxf') return downloadBlob(new Blob([sheetDxf(sheet, paper)], { type: 'application/dxf' }), `${base}-cut.dxf`);
-    setExporting(`${index}`);
+    setExporting(`${index}:${kind}`);
     try {
-      const jpeg = await renderSheetJpeg(sheet, paper, sources(), 0);
-      downloadBlob(sheetPdf(sheet, paper, jpeg), `${base}.pdf`);
+      if (kind === 'png') {
+        downloadBlob(await renderSheetPng(sheet, paper, sources(), 0), `${base}.png`);
+      } else {
+        const jpeg = await renderSheetJpeg(sheet, paper, sources(), 0);
+        downloadBlob(sheetPdf(sheet, paper, jpeg), `${base}.pdf`);
+      }
     } finally {
       setExporting(null);
     }
   };
-  const downloadAll = async () => {
-    for (let i = 0; i < packed.sheets.length; i++) await download(i, 'pdf');
+  const downloadAll = async (kind: 'pdf' | 'png') => {
+    for (let i = 0; i < packed.sheets.length; i++) await download(i, kind);
   };
 
   const serverNow = now + clockOffset;
@@ -548,8 +552,11 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
             <button type="button" className="btn btn--accent" onClick={printAll} disabled={!totalStickers || missingImages}>
               {a.printAll}
             </button>
-            <button type="button" className="btn btn--ghost" onClick={downloadAll} disabled={!totalStickers || missingImages || !!exporting}>
+            <button type="button" className="btn btn--ghost" onClick={() => downloadAll('pdf')} disabled={!totalStickers || missingImages || !!exporting}>
               {a.pdfAll}
+            </button>
+            <button type="button" className="btn btn--ghost" onClick={() => downloadAll('png')} disabled={!totalStickers || missingImages || !!exporting}>
+              {a.pngAll}
             </button>
           </div>
           <details className="howto">
@@ -570,7 +577,10 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
                   {a.sheetCaption(i + 1, sheet.length)}
                   <span className="sheet-preview__links">
                     <button type="button" className="btn btn--link btn--sm" onClick={() => download(i, 'pdf')} disabled={!!exporting || missingImages}>
-                      {exporting === `${i}` ? a.generating : 'PDF'}
+                      {exporting === `${i}:pdf` ? a.generating : 'PDF'}
+                    </button>
+                    <button type="button" className="btn btn--link btn--sm" onClick={() => download(i, 'png')} disabled={!!exporting || missingImages}>
+                      {exporting === `${i}:png` ? a.generating : 'PNG'}
                     </button>
                     <button type="button" className="btn btn--link btn--sm" onClick={() => download(i, 'dxf')}>
                       DXF

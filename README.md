@@ -91,6 +91,7 @@ Fixed layout (all three workshop types): 1.2 cm margin (room for the cutter's re
   - **Cut layer:** each cut circle as a vector path in the **`CutContour`** spot colour (0.25 pt, 100% magenta). It's on a PDF layer marked "don't print", so an ordinary print won't show it.
   - **To use it:** open the PDF in the MicroCut software, add registration marks, print from there, then cut along `CutContour`.
 - **DXF:** cut circles only, at exactly the same positions in mm, for cutter software that prefers DXF.
+- **PNG / PNG ทุกแผ่น:** the whole sheet as a 360 DPI PNG with transparent paper (only the stickers are opaque). The image carries its DPI, so it opens at true A3/A4 size. It has no cut lines; pair it with the DXF.
 - **พิมพ์ทุกแผ่น:** prints straight from the browser at true size, one sheet per page. Set Scale to 100%.
 
 ### Photo handling
