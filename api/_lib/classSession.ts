@@ -28,25 +28,39 @@ export interface WorkshopType {
   th: string;
   en: string;
   diameterMm: number;
-  marginMm: number;
+  /** Page margin at the left and right edges. */
+  marginXMm: number;
+  /** Page margin at the top and bottom edges. */
+  marginYMm: number;
   gapMm: number;
 }
 
 export const DEFAULT_WORKSHOP_TYPES: WorkshopType[] = [
-  { id: 'herbal-inhaler', th: 'ยาดมสมุนไพร', en: 'Herbal inhaler', diameterMm: 35, marginMm: 12, gapMm: 3 },
-  { id: 'thai-tea', th: 'ชาไทย', en: 'Thai tea', diameterMm: 78, marginMm: 12, gapMm: 3 },
-  { id: 'giant-inhaler', th: 'ยาดมยักษ์', en: 'Giant herbal inhaler', diameterMm: 104, marginMm: 12, gapMm: 3 },
+  { id: 'herbal-inhaler', th: 'ยาดมสมุนไพร', en: 'Herbal inhaler', diameterMm: 35, marginXMm: 40, marginYMm: 20, gapMm: 3 },
+  { id: 'thai-tea', th: 'ชาไทย', en: 'Thai tea', diameterMm: 78, marginXMm: 40, marginYMm: 20, gapMm: 3 },
+  { id: 'giant-inhaler', th: 'ยาดมยักษ์', en: 'Giant herbal inhaler', diameterMm: 104, marginXMm: 40, marginYMm: 20, gapMm: 3 },
 ];
 
 export const WORKSHOP_LIMITS = {
   maxTypes: 20,
   maxNameLength: 40,
   diameterMm: [10, 270],
-  marginMm: [0, 40],
+  marginMm: [0, 60],
+  /** A3 is 297 × 420 mm. */
+  a3HeightMm: 420,
   gapMm: [0, 20],
   /** The largest paper (A3, 297 × 420 mm) must fit one sticker with its margins. */
   a3WidthMm: 297,
 } as const;
+
+/**
+ * Fills in fields from older saved data: before left/right and top/bottom
+ * margins were separate, a type had one `marginMm` for all four sides.
+ */
+export function normalizeWorkshopType(t: WorkshopType & { marginMm?: number }): WorkshopType {
+  const { marginMm, ...rest } = t;
+  return { ...rest, marginXMm: t.marginXMm ?? marginMm ?? 40, marginYMm: t.marginYMm ?? marginMm ?? 20 };
+}
 
 /** The type with `id` from `types`, else the first one (e.g. it was deleted). */
 export const findWorkshopType = (types: readonly WorkshopType[], id: string | undefined): WorkshopType =>
@@ -57,7 +71,7 @@ export const findWorkshopType = (types: readonly WorkshopType[], id: string | un
  * edits don't change a running class; older classes stored only an id.
  */
 export const sessionWorkshopType = (type: WorkshopType | string | undefined): WorkshopType =>
-  typeof type === 'object' && type ? type : findWorkshopType(DEFAULT_WORKSHOP_TYPES, type);
+  typeof type === 'object' && type ? normalizeWorkshopType(type) : findWorkshopType(DEFAULT_WORKSHOP_TYPES, type);
 
 const round01 = (n: number) => Math.round(n * 10) / 10; // 0.1 mm
 
@@ -74,23 +88,24 @@ export function validateWorkshopTypes(
   const types: WorkshopType[] = [];
   const ids = new Set<string>();
   for (const [i, raw] of input.entries()) {
-    const t = raw as Partial<WorkshopType>;
+    const t = raw as Partial<WorkshopType> & { marginMm?: number };
     const th = String(t.th ?? '').trim().slice(0, L.maxNameLength);
     const en = String(t.en ?? '').trim().slice(0, L.maxNameLength);
     const diameterMm = round01(Number(t.diameterMm));
-    const marginMm = round01(Number(t.marginMm));
+    const marginXMm = round01(Number(t.marginXMm ?? t.marginMm));
+    const marginYMm = round01(Number(t.marginYMm ?? t.marginMm));
     const gapMm = round01(Number(t.gapMm));
     const row = `Workshop ${i + 1}`;
     if (!th) return { ok: false, reason: 'name', row: i + 1, error: `${row}: Thai name is required` };
     const inRange = (v: number, [lo, hi]: readonly [number, number]) => Number.isFinite(v) && v >= lo && v <= hi;
     if (!inRange(diameterMm, L.diameterMm)) return { ok: false, reason: 'size', row: i + 1, error: `${row}: sticker size must be ${L.diameterMm[0] / 10}–${L.diameterMm[1] / 10} cm` };
-    if (!inRange(marginMm, L.marginMm)) return { ok: false, reason: 'margin', row: i + 1, error: `${row}: margin must be 0–${L.marginMm[1] / 10} cm` };
+    if (!inRange(marginXMm, L.marginMm) || !inRange(marginYMm, L.marginMm)) return { ok: false, reason: 'margin', row: i + 1, error: `${row}: margin must be 0–${L.marginMm[1] / 10} cm` };
     if (!inRange(gapMm, L.gapMm)) return { ok: false, reason: 'gap', row: i + 1, error: `${row}: gap must be 0–${L.gapMm[1] / 10} cm` };
-    if (diameterMm + 2 * marginMm > L.a3WidthMm) return { ok: false, reason: 'fit', row: i + 1, error: `${row}: the sticker and its margins don't fit on A3` };
+    if (diameterMm + 2 * marginXMm > L.a3WidthMm || diameterMm + 2 * marginYMm > L.a3HeightMm) return { ok: false, reason: 'fit', row: i + 1, error: `${row}: the sticker and its margins don't fit on A3` };
     let id = String(t.id ?? '').trim();
     if (!/^[a-z0-9-]{1,40}$/.test(id) || ids.has(id)) id = `type-${Date.now().toString(36)}-${i}`;
     ids.add(id);
-    types.push({ id, th, en: en || th, diameterMm, marginMm, gapMm });
+    types.push({ id, th, en: en || th, diameterMm, marginXMm, marginYMm, gapMm });
   }
   return { ok: true, types };
 }

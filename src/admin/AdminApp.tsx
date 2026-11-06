@@ -301,7 +301,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
   );
   const paper = PAPERS[settings.paper];
   const packed = useMemo(
-    () => packStickers(kinds, { paper, marginMm: kind.marginMm, gapMm: kind.gapMm }),
+    () => packStickers(kinds, { paper, marginXMm: kind.marginXMm, marginYMm: kind.marginYMm, gapMm: kind.gapMm }),
     [kinds, paper, kind],
   );
   const images = useMemo(() => {
@@ -542,7 +542,7 @@ function Dashboard({ onLoggedOut }: { onLoggedOut: () => void }) {
               </select>
             </label>
           </div>
-          <p className="field-hint">{a.fixedLayout(kind[a.lang], formatCm(kind.diameterMm), formatCm(kind.marginMm), formatCm(kind.gapMm))}</p>
+          <p className="field-hint">{a.fixedLayout(kind[a.lang], formatCm(kind.diameterMm), formatCm(kind.marginXMm), formatCm(kind.marginYMm), formatCm(kind.gapMm))}</p>
           {packed.tooBig.length > 0 && <p className="alert">{a.tooBig}</p>}
 
           <p className="sheet-summary">

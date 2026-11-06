@@ -3,7 +3,7 @@
 // Run with `npm run test:pack` (Node 22.18+ runs TypeScript directly).
 import { packStickers, PAPERS, type PackResult } from '../src/lib/pack.ts';
 
-const opts = (paper: 'A4' | 'A3') => ({ paper: PAPERS[paper], marginMm: 5, gapMm: 2 });
+const opts = (paper: 'A4' | 'A3', marginXMm = 5, marginYMm = 5) => ({ paper: PAPERS[paper], marginXMm, marginYMm, gapMm: 2 });
 let failures = 0;
 const fail = (msg: string) => {
   failures++;
@@ -15,10 +15,10 @@ function check(label: string, res: PackResult, o: ReturnType<typeof opts>) {
     for (const p of s) {
       const r = p.diameterMm / 2;
       const out =
-        p.x - r < o.marginMm - 1e-6 ||
-        p.y - r < o.marginMm - 1e-6 ||
-        p.x + r > o.paper.widthMm - o.marginMm + 1e-6 ||
-        p.y + r > o.paper.heightMm - o.marginMm + 1e-6;
+        p.x - r < o.marginXMm - 1e-6 ||
+        p.y - r < o.marginYMm - 1e-6 ||
+        p.x + r > o.paper.widthMm - o.marginXMm + 1e-6 ||
+        p.y + r > o.paper.heightMm - o.marginYMm + 1e-6;
       if (out) fail(`${label}: sticker outside margin`);
     }
     for (let i = 0; i < s.length; i++)
@@ -58,6 +58,20 @@ for (const paper of ['A4', 'A3'] as const) {
     if (placed !== k.count) fail(`${paper} mixed: ${k.key} placed ${placed}/${k.count}`);
   }
   console.log(`${paper} mixed 20×35 + 30×25 + 40×50 mm: ${res.sheets.map((s) => s.length).join(' + ')}`);
+}
+
+// Different left/right and top/bottom margins, including the rotated layouts.
+for (const [mx, my] of [[5, 25], [25, 5], [0, 40]]) {
+  for (const d of [35, 78, 104]) {
+    const o = opts('A3', mx, my);
+    const res = packStickers([{ key: 'm', diameterMm: d, count: 200 }], o);
+    check(`A3 margins ${mx}/${my} ${d}mm`, res, o);
+    const ps = res.sheets.flat();
+    const minX = Math.min(...ps.map((p) => p.x - p.diameterMm / 2));
+    const minY = Math.min(...ps.map((p) => p.y - p.diameterMm / 2));
+    if (minX < mx - 1e-6 || minY < my - 1e-6) fail(`margins ${mx}/${my} not respected`);
+  }
+  console.log(`A3 margins left/right ${mx} mm, top/bottom ${my} mm: ok`);
 }
 
 const big = packStickers([{ key: 'X', diameterMm: 250, count: 1 }], opts('A4'));

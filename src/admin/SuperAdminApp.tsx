@@ -110,7 +110,7 @@ function Login({ onDone }: { onDone: () => void }) {
 /** How many stickers of one type fit on one sheet of each paper. */
 function perSheet(t: WorkshopType) {
   const count = (paper: keyof typeof PAPERS) =>
-    packStickers([{ key: 't', diameterMm: t.diameterMm, count: 500 }], { paper: PAPERS[paper], marginMm: t.marginMm, gapMm: t.gapMm })
+    packStickers([{ key: 't', diameterMm: t.diameterMm, count: 500 }], { paper: PAPERS[paper], marginXMm: t.marginXMm, marginYMm: t.marginYMm, gapMm: t.gapMm })
       .sheets[0]?.length ?? 0;
   return { a3: count('A3'), a4: count('A4') };
 }
@@ -157,7 +157,7 @@ function WorkshopEditor({ onLoggedOut }: { onLoggedOut: () => void }) {
     const last = types[types.length - 1];
     setTypes([
       ...types,
-      { id: '', th: s.newName, en: 'New workshop', diameterMm: 35, marginMm: last?.marginMm ?? 12, gapMm: last?.gapMm ?? 3 },
+      { id: '', th: s.newName, en: 'New workshop', diameterMm: 35, marginXMm: last?.marginXMm ?? 40, marginYMm: last?.marginYMm ?? 20, gapMm: last?.gapMm ?? 3 },
     ]);
   };
   const save = async () => {
@@ -227,13 +227,23 @@ function WorkshopEditor({ onLoggedOut }: { onLoggedOut: () => void }) {
                   />
                 </label>
                 <label>
-                  {s.margin}
+                  {s.marginX}
                   <CmInput
-                    valueMm={t.marginMm}
+                    valueMm={t.marginXMm}
                     minMm={WORKSHOP_LIMITS.marginMm[0]}
                     maxMm={WORKSHOP_LIMITS.marginMm[1]}
-                    onChangeMm={(mm) => update(i, { marginMm: mm })}
-                    aria-label={s.margin}
+                    onChangeMm={(mm) => update(i, { marginXMm: mm })}
+                    aria-label={s.marginX}
+                  />
+                </label>
+                <label>
+                  {s.marginY}
+                  <CmInput
+                    valueMm={t.marginYMm}
+                    minMm={WORKSHOP_LIMITS.marginMm[0]}
+                    maxMm={WORKSHOP_LIMITS.marginMm[1]}
+                    onChangeMm={(mm) => update(i, { marginYMm: mm })}
+                    aria-label={s.marginY}
                   />
                 </label>
                 <label>

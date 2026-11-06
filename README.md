@@ -48,16 +48,16 @@ Only one class runs at a time; starting a new one ends the previous one.
 When starting a class, the admin picks the workshop type. It fixes the sticker size and sheet layout, and all types use the same 24 frames. The admin's only print choice is **A3 / A4**, and bleed is always 0.
 
 The **super admin** manages the types at **`/superadmin`**, which has its own password (`SUPERADMIN_PASSWORD`). An admin login can't open it.
-- **Edit types:** Thai and English name, sticker size, page margin and gap (in cm). Add, remove or reorder types.
+- **Edit types:** Thai and English name, sticker size, **left/right and top/bottom page margins** (separately) and gap, all in cm. Add, remove or reorder types.
 - **Live counts:** each type shows how many stickers fit per A3 and A4 sheet. It warns when a size is too big for A4.
-- **Validation:** the server checks every save. Names are required, sizes are 1–27 cm, margin 0–4 cm, gap 0–2 cm, and a sticker plus its margins must fit A3. Problems are reported in Thai or English.
+- **Validation:** the server checks every save. Names are required, sizes are 1–27 cm, margins 0–6 cm, gap 0–2 cm, and a sticker plus its margins must fit A3. Problems are reported in Thai or English.
 - **Storage:** the list is saved permanently in Redis. Until the first save, the defaults apply:
 
 | Type | Sticker | Per A3 sheet | Per A4 sheet |
 | --- | --- | --- | --- |
-| ยาดมสมุนไพร (herbal inhaler) | 3.5 cm | 80 | 33 |
-| ชาไทย (Thai tea) | 7.8 cm | 13 | 6 |
-| ยาดมยักษ์ (giant herbal inhaler) | 10.4 cm | 8 | 2 |
+| ยาดมสมุนไพร (herbal inhaler) | 3.5 cm | 57 | 21 |
+| ชาไทย (Thai tea) | 7.8 cm | 10 | 3 |
+| ยาดมยักษ์ (giant herbal inhaler) | 10.4 cm | 6 | 2 |
 
 - **Effect on classes:** a class keeps a copy of its type when it starts. Edits apply to classes started afterwards, and a running class keeps its size until it ends.
 - **Reset:** **คืนค่าเริ่มต้น** restores the three defaults.
@@ -77,14 +77,14 @@ The **super admin** manages the types at **`/superadmin`**, which has its own pa
 - **Extra sheets** are added until every sticker is placed. Stickers bigger than the paper are reported, not dropped silently.
 - **Settings:** fixed per workshop type (set by the super admin on `/superadmin`); the admin only picks A3 or A4. Bleed is always 0.
 
-| With the fixed layout (1.2 cm margin, 0.3 cm gap) | Simple grid | This packing |
-| --- | --- | --- |
-| 3.5 cm on A3 / A4 | 70 / 28 | **80 / 33** |
-| 7.8 cm on A3 / A4 | 12 / 6 | **13 / 6** |
-| 10.4 cm on A3 / A4 | 6 / 2 | **8 / 2** |
+| Default layout (4 cm left/right, 2 cm top/bottom, 0.3 cm gap) | This packing |
+| --- | --- |
+| 3.5 cm on A3 / A4 | **57 / 21** |
+| 7.8 cm on A3 / A4 | **10 / 3** |
+| 10.4 cm on A3 / A4 | **6 / 2** |
 
 ### Printing and cutting (Epson L18050 + MicroCut 30Q)
-Fixed layout (all three workshop types): 1.2 cm margin (room for the cutter's registration marks), 0.3 cm gap, **no bleed** (cut exactly on the artwork edge). Paper defaults to **A3**.
+Layout per workshop type (set on `/superadmin`). The defaults are a **4 cm left/right** and **2 cm top/bottom** page margin (room for the cutter's registration marks), a 0.3 cm gap, and **no bleed** (cut exactly on the artwork edge). Paper defaults to **A3**.
 
 - **PDF ทุกแผ่น / PDF:** one PDF per sheet.
   - **Print layer:** the sheet as a 360 DPI image (the Epson's native resolution).

@@ -1,5 +1,5 @@
 import { Redis } from '@upstash/redis';
-import { DEFAULT_WORKSHOP_TYPES, type ClassSession, type SubmissionMeta, type WorkshopType } from './classSession.js';
+import { DEFAULT_WORKSHOP_TYPES, normalizeWorkshopType, type ClassSession, type SubmissionMeta, type WorkshopType } from './classSession.js';
 
 /**
  * Storage for the running class. Every key expires at the class end time,
@@ -100,7 +100,7 @@ class RedisStore implements Store {
 
   async getWorkshopTypes() {
     const raw = await this.redis.get<string>(K.workshopTypes);
-    return raw ? (JSON.parse(raw) as WorkshopType[]) : DEFAULT_WORKSHOP_TYPES;
+    return raw ? (JSON.parse(raw) as WorkshopType[]).map(normalizeWorkshopType) : DEFAULT_WORKSHOP_TYPES;
   }
 
   async setWorkshopTypes(types: WorkshopType[]) {
@@ -175,7 +175,7 @@ class MemoryStore implements Store {
     this.data.delete(K.img(sid, id));
   }
   async getWorkshopTypes() {
-    return this.get<WorkshopType[]>(K.workshopTypes) ?? DEFAULT_WORKSHOP_TYPES;
+    return (this.get<WorkshopType[]>(K.workshopTypes) ?? DEFAULT_WORKSHOP_TYPES).map(normalizeWorkshopType);
   }
   async setWorkshopTypes(types: WorkshopType[]) {
     this.set(K.workshopTypes, types, Infinity);

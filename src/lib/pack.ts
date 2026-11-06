@@ -46,8 +46,10 @@ export interface Placement {
 
 export interface PackOptions {
   paper: PaperSize;
-  /** Blank border the printer can't reach. */
-  marginMm: number;
+  /** Blank border at the left and right edges (room for printer limits and cutter marks). */
+  marginXMm: number;
+  /** Blank border at the top and bottom edges. */
+  marginYMm: number;
   /** Space between neighbouring circles, for cutting. */
   gapMm: number;
 }
@@ -132,15 +134,16 @@ function fillSheet(
   h: number,
   queue: { key: string; d: number; left: number }[],
   mode: Mode,
-  margin: number,
+  marginX: number,
+  marginY: number,
   gap: number,
 ): Placement[] {
   const placed: Circle[] = [];
   const out: Placement[] = [];
-  const left = margin;
-  const right = w - margin;
-  const top = margin;
-  const bottom = h - margin;
+  const left = marginX;
+  const right = w - marginX;
+  const top = marginY;
+  const bottom = h - marginY;
 
   // Cursor: x of the next circle's left edge in the current row (null = start a new row).
   let cursor: number | null = null;
@@ -193,9 +196,9 @@ function fillSheet(
 }
 
 export function packStickers(kinds: PackKind[], opts: PackOptions): PackResult {
-  const { paper, marginMm: margin, gapMm: gap } = opts;
-  const usableW = paper.widthMm - 2 * margin;
-  const usableH = paper.heightMm - 2 * margin;
+  const { paper, marginXMm: marginX, marginYMm: marginY, gapMm: gap } = opts;
+  const usableW = paper.widthMm - 2 * marginX;
+  const usableH = paper.heightMm - 2 * marginY;
   const tooBig: string[] = [];
 
   // Largest first; equal sizes keep their input order (so a class stays together).
@@ -215,8 +218,12 @@ export function packStickers(kinds: PackKind[], opts: PackOptions): PackResult {
     for (const mode of ['hex', 'square'] as const) {
       for (const transposed of [false, true]) {
         const queue = remaining.map((k) => ({ ...k }));
-        const [w, h] = transposed ? [paper.heightMm, paper.widthMm] : [paper.widthMm, paper.heightMm];
-        let placements = fillSheet(w, h, queue, mode, margin, gap);
+        // Transposed: fill a rotated page (rows run down the paper), so its
+        // horizontal margin is the paper's top/bottom one and vice versa.
+        const [w, h, mx, my] = transposed
+          ? [paper.heightMm, paper.widthMm, marginY, marginX]
+          : [paper.widthMm, paper.heightMm, marginX, marginY];
+        let placements = fillSheet(w, h, queue, mode, mx, my, gap);
         if (transposed) placements = placements.map((p) => ({ ...p, x: p.y, y: p.x }));
         const area = placements.reduce((s, p) => s + p.diameterMm * p.diameterMm, 0);
         // Among equally full layouts prefer the most compact one (less paper used).

@@ -58,8 +58,8 @@ const th = {
   paperA3: 'A3 (29.7 × 42 ซม.)',
   paperA4: 'A4 (21 × 29.7 ซม.)',
   tooBig: 'มีสติกเกอร์ที่ใหญ่เกินกระดาษ จึงไม่ได้ใส่ในแผ่น',
-  fixedLayout: (type: string, size: string, margin: string, gap: string) =>
-    `${type}: สติกเกอร์ ${size} ซม. · ขอบกระดาษ ${margin} ซม. · ระยะห่าง ${gap} ซม. (กำหนดตามประเภทเวิร์กช็อป ไม่เผื่อตัด)`,
+  fixedLayout: (type: string, size: string, marginX: string, marginY: string, gap: string) =>
+    `${type}: สติกเกอร์ ${size} ซม. · ขอบซ้าย-ขวา ${marginX} ซม. · ขอบบน-ล่าง ${marginY} ซม. · ระยะห่าง ${gap} ซม. (กำหนดตามประเภทเวิร์กช็อป ไม่เผื่อตัด)`,
   summary: (stickers: number, sheets: number, paper: string) => `${stickers} ดวง · ${sheets} แผ่น ${paper}`,
   printAll: '🖨 พิมพ์ทุกแผ่น',
   pdfAll: '⬇ PDF ทุกแผ่น (สำหรับเครื่องตัด)',
@@ -73,7 +73,8 @@ const th = {
     'ไฟล์ PNG คือภาพทั้งแผ่นที่ 360 DPI พื้นหลังโปร่งใส (ไม่มีเส้นตัด) เปิดได้ในโปรแกรมทั่วไปและได้ขนาดจริงของกระดาษ ใช้คู่กับ DXF ได้',
     'ถ้าพิมพ์จากหน้านี้โดยตรง (ปุ่ม "พิมพ์ทุกแผ่น") ให้ตั้ง Scale 100% และขนาดกระดาษให้ตรง เหมาะกับการตัดด้วยมือ',
   ],
-  howtoMargin: 'ขอบกระดาษ 1.2 ซม. เผื่อที่ให้จุดมาร์กของเครื่องตัด ถ้าโปรแกรมต้องการพื้นที่มากกว่านี้ ให้เพิ่มค่า "ขอบกระดาษ"',
+  howtoMargin:
+    'ขอบกระดาษ (ค่าเริ่มต้น ซ้าย-ขวา 4 ซม. บน-ล่าง 2 ซม.) เผื่อที่ให้จุดมาร์กของเครื่องตัด ถ้าโปรแกรมต้องการพื้นที่มากกว่านี้ ให้ซูเปอร์แอดมินปรับขอบของประเภทเวิร์กช็อปที่หน้า /superadmin',
   sheetCaption: (i: number, n: number) => `แผ่น ${i} · ${n} ดวง`,
   generating: 'กำลังสร้าง…',
   // QR full screen
@@ -147,8 +148,8 @@ const en: AdminStrings = {
   paperA3: 'A3 (29.7 × 42 cm)',
   paperA4: 'A4 (21 × 29.7 cm)',
   tooBig: "Some stickers are bigger than the paper, so they weren't placed.",
-  fixedLayout: (type: string, size: string, margin: string, gap: string) =>
-    `${type}: ${size} cm stickers · ${margin} cm page margin · ${gap} cm gap (fixed by the workshop type, no bleed)`,
+  fixedLayout: (type: string, size: string, marginX: string, marginY: string, gap: string) =>
+    `${type}: ${size} cm stickers · ${marginX} cm left/right margin · ${marginY} cm top/bottom margin · ${gap} cm gap (fixed by the workshop type, no bleed)`,
   summary: (stickers: number, sheets: number, paper: string) =>
     `${stickers} sticker${stickers === 1 ? '' : 's'} · ${sheets} ${paper} sheet${sheets === 1 ? '' : 's'}`,
   printAll: '🖨 Print all sheets',
@@ -163,7 +164,8 @@ const en: AdminStrings = {
     'The PNG is the whole sheet at 360 DPI with a transparent background (no cut lines). It opens at true paper size in most programs and lines up with the DXF.',
     'When printing straight from this page ("Print all sheets"), set Scale to 100% and the matching paper size. Best for cutting by hand.',
   ],
-  howtoMargin: 'The 1.2 cm page margin leaves room for the cutter\'s registration marks. If the software needs more, increase "Page margin".',
+  howtoMargin:
+    "The page margins (by default 4 cm left/right and 2 cm top/bottom) leave room for the cutter's registration marks. If the software needs more, the super admin can change the workshop type's margins on /superadmin.",
   sheetCaption: (i: number, n: number) => `Sheet ${i} · ${n} sticker${n === 1 ? '' : 's'}`,
   generating: 'Creating…',
   scanToSend: 'Scan to send your photo for a sticker',
